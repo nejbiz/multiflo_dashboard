@@ -1,0 +1,16 @@
+[Unit]
+Description=MultiFlo touchscreen dashboard bridge
+After=network.target
+StartLimitIntervalSec=60
+StartLimitBurst=3
+
+[Service]
+Type=simple
+WorkingDirectory=/home/multiflo-display/multiflo-app
+Environment=PYTHONPATH=/home/multiflo-display/multiflo-app
+ExecStart=/home/multiflo-display/multiflo-app/.venv/bin/python /home/multiflo-display/multiflo-app/demo/bridge_server.py --host 127.0.0.1 --http-port 8000 --serial-port /dev/serial/by-id/usb-BTI_MultiFlo_14071419-if00-port0
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target

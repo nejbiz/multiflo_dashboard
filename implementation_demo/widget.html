@@ -1,0 +1,1631 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="theme-color" content="#edf4f0" />
+<title>MultiFlo Control</title>
+<style>
+  :root {
+    color-scheme: light; --ink: #16201e; --muted: #66736f; --line: #dce4e0;
+    --paper: #fff; --wash: #f4f7f5; --green: #126b52; --green-dark: #0c4d3b;
+    --green-soft: #e2f2eb; --blue: #315f9b; --red: #a33a31;
+    --shadow: 0 16px 44px rgba(27, 48, 42, .08);
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; min-width: 320px; color: var(--ink); background: linear-gradient(145deg, #edf4f0, #f7f5ef 52%, #eef2f0); font: 19px/1.45 Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif; }
+  button, input, select { font: inherit; }
+  button { touch-action: manipulation; }
+  .eyebrow { color: #80918c; text-transform: uppercase; letter-spacing: .12em; font-size: 13px; font-weight: 700; }
+  main { max-width: 1240px; margin: 0 auto; padding: 26px 28px 42px; }
+  .statusbar { display: grid; grid-template-columns: minmax(0, 1fr) minmax(626px, 1fr) auto; gap: 1px; overflow: hidden; margin-bottom: 22px; background: var(--line); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow); }
+  .metric { min-height: 74px; padding: 13px 16px; background: var(--paper); }
+  .metric strong { display: block; margin-top: 3px; font-size: 19px; font-weight: 650; }
+  .metric .small { font-size: 14px; color: var(--muted); }
+  .instrument-summary { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(170px, .85fr); gap: 18px; align-items: center; }
+  .instrument-summary > div, .cassette-summary > div { min-width: 0; }
+  .instrument-summary strong, .instrument-summary .small,
+  .cassette-summary strong, .cassette-summary .small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .cassette-summary .small { display: block; }
+  .cassette-summary { display: grid; grid-template-columns: minmax(148px, .7fr) minmax(200px, 1fr) 104px auto; gap: 12px; align-items: center; }
+  .cassette-summary .eyebrow { white-space: nowrap; }
+  .lifetime-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+  .lifetime-value { overflow: hidden; color: var(--muted); font-size: 13px; text-overflow: ellipsis; white-space: nowrap; }
+  .lifetime-dots { display: flex; gap: 5px; margin-top: 6px; }
+  .lifetime-dot { width: 11px; height: 11px; border: 1px solid #acc4ba; border-radius: 99px; background: #edf3f0; transition: background .2s, border-color .2s; }
+  .lifetime-dot.on { border-color: var(--green); background: var(--green); }
+  .plate-count strong { font-size: 26px; font-variant-numeric: tabular-nums; }
+  .cassette-summary.limit { background: #fff4d8; }
+  .cassette-summary.limit .lifetime-dot.on { border-color: #c77d12; background: #c77d12; }
+  .cassette-summary.limit .lifetime-value, .cassette-summary.limit .small { color: #795b26; }
+  .replace-compact { min-height: 46px; padding: 8px 13px; font-size: 15px; }
+  .btn { border: 1px solid #cbd6d1; border-radius: 9px; padding: 13px 20px; color: var(--ink); background: #fff; cursor: pointer; font-weight: 650; }
+  .btn:hover { border-color: #9fb0aa; background: #fbfcfb; }
+  .btn:disabled { cursor: not-allowed; opacity: .45; }
+  .btn.primary { color: #fff; background: var(--green); border-color: var(--green); }
+  .btn.primary:hover { background: var(--green-dark); }
+  .btn.danger { color: var(--red); border-color: #e2b9b5; }
+  .btn.big { min-height: 78px; padding: 16px 40px; font-size: 25px; border-radius: 13px; }
+  .refresh-cell { display: flex; flex-direction: row; align-items: center; justify-content: center; gap: 7px; padding: 12px; background: var(--paper); }
+  .power-button { width: 52px; min-width: 52px; padding: 8px; color: var(--red); font-size: 25px; line-height: 1; }
+  h2 { margin: 0; font-size: 22px; line-height: 1.2; letter-spacing: -.025em; }
+  .help { color: var(--muted); font-size: 16px; }
+  .workspace { display: grid; grid-template-columns: 210px minmax(0, 1fr); gap: 18px; align-items: start; }
+  .side { display: grid; grid-template-rows: auto minmax(14px, 1fr) auto minmax(14px, 1fr) auto minmax(14px, 1fr); overflow: hidden; border: 1px solid var(--line); border-radius: 12px; background: rgba(255,255,255,.82); box-shadow: var(--shadow); }
+  .side::after { content: ""; grid-row: 6; }
+  .nav-primary { grid-row: 1; }
+  .nav-protocol { grid-row: 3; }
+  .nav-settings { grid-row: 5; }
+  .nav-group { min-width: 0; overflow: hidden; }
+  .side button { width: 100%; display: flex; gap: 13px; align-items: center; padding: 20px 16px; border: 0; border-bottom: 1px solid var(--line); color: #4c5a56; background: transparent; cursor: pointer; text-align: left; font-size: 20px; }
+  .side button:last-child { border-bottom: 0; }
+  .side button:hover { background: #f6f9f7; }
+  .side button.active { color: var(--green-dark); background: var(--green-soft); font-weight: 700; box-shadow: inset 3px 0 var(--green); }
+  .nav-icon { width: 20px; text-align: center; }
+  .panel { display: none; }
+  .panel.active { display: block; }
+  .card { margin-bottom: 14px; padding: 20px; border: 1px solid var(--line); border-radius: 12px; background: var(--paper); box-shadow: var(--shadow); }
+  .card-head { display: flex; justify-content: space-between; align-items: start; gap: 15px; margin-bottom: 16px; }
+  h3 { margin: 0; font-size: 26px; letter-spacing: -.015em; }
+  h4 { margin: 0; font-size: 18px; }
+  label { display: block; margin-bottom: 7px; color: #5c6965; font-size: 14px; font-weight: 700; letter-spacing: .035em; text-transform: uppercase; }
+  input, select { width: 100%; min-height: 60px; border: 1px solid #ccd6d2; border-radius: 9px; padding: 11px 14px; color: var(--ink); background: #fbfcfb; font-size: 21px; }
+  input:focus, select:focus { outline: 2px solid rgba(18,107,82,.17); border-color: var(--green); }
+  .segmented { display: flex; gap: 5px; padding: 5px; border-radius: 10px; background: var(--wash); }
+  .segmented button { flex: 1; min-height: 62px; border: 0; border-radius: 8px; padding: 9px 14px; color: #61706b; background: transparent; cursor: pointer; font-size: 20px; white-space: nowrap; }
+  .segmented button.active { color: var(--green-dark); background: #fff; font-weight: 700; box-shadow: 0 1px 5px rgba(20,45,37,.1); }
+  .segmented button:disabled { opacity: .4; cursor: not-allowed; }
+  /* --- Dispense panel --------------------------------------------------- */
+  .dispense-card { display: flex; flex-direction: column; gap: 16px; }
+  .dispense-body { display: flex; flex-direction: column; gap: 16px; min-height: 0; }
+  .dispense-top { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(300px, .9fr); gap: 18px; align-items: end; }
+  .stepper { display: grid; grid-template-columns: 62px minmax(0, 1fr) 62px; gap: 8px; align-items: stretch; }
+  .stepper button { min-height: 70px; border: 1px solid #c3d0cb; border-radius: 10px; background: #fff; color: var(--green-dark); font-size: 32px; font-weight: 700; line-height: 1; cursor: pointer; }
+  .stepper button:hover { background: var(--green-soft); }
+  .stepper button:disabled { opacity: .4; cursor: not-allowed; }
+  .stepper input { min-height: 70px; text-align: center; font-size: 30px; font-weight: 700; }
+  .map-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
+  .map-head .help { font-size: 17px; }
+  .map-actions { display: flex; gap: 8px; }
+  .map-actions .btn { min-height: 50px; padding: 8px 18px; font-size: 17px; }
+  .plate { padding: 14px 16px; border: 1px solid var(--line); border-radius: 12px; background: #f7faf8; }
+  .plate-map { display: grid; gap: 7px; align-items: center; }
+  .plate-map.w96 { grid-template-columns: 132px repeat(12, minmax(0, 1fr)); }
+  .plate-map.w384 { grid-template-columns: 132px repeat(24, minmax(0, 1fr)); gap: 5px; }
+  .col-head { border: 0; padding: 0 0 3px; color: #5d6b66; background: transparent; cursor: pointer; font-size: 17px; font-weight: 750; }
+  .plate-map.w384 .col-head { font-size: 13px; }
+  .col-head.selected { color: var(--green); }
+  .band-label { display: flex; flex-direction: column; gap: 2px; align-items: flex-start; padding: 6px 10px; border: 1px solid #cbd7d2; border-radius: 9px; background: #fff; color: #4c5a56; cursor: pointer; text-align: left; }
+  .band-label strong { font-size: 17px; }
+  .band-label.on { border-color: var(--green); color: var(--green-dark); background: var(--green-soft); }
+  .band-spacer { color: var(--muted); font-size: 15px; font-weight: 650; padding-left: 4px; }
+  .cell { height: 58px; min-width: 0; padding: 0; border: 2px solid #bccbc5; border-radius: 9px; background: #fff; cursor: pointer; }
+  .plate-map.w384 .cell { height: 50px; border-radius: 7px; }
+  .cell.on { border-color: var(--green); background: #bfe4d5; }
+  .cell.muted { opacity: .3; }
+  .cell:disabled { cursor: not-allowed; }
+  details.advanced { border: 1px solid var(--line); border-radius: 12px; background: #fbfcfb; }
+  details.advanced > summary { display: flex; align-items: center; gap: 10px; min-height: 68px; padding: 0 20px; color: #45534f; cursor: pointer; font-size: 20px; font-weight: 700; list-style: none; }
+  details.advanced > summary::-webkit-details-marker { display: none; }
+  details.advanced > summary::before { content: "▸"; color: var(--green); font-size: 15px; }
+  details.advanced[open] > summary::before { content: "▾"; }
+  details.advanced > summary .help { margin-left: auto; }
+  .advanced-body { padding: 4px 18px 18px; border-top: 1px solid var(--line); }
+  .advanced-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; padding-top: 14px; }
+  .advanced-grid > div { display: flex; flex-direction: column; justify-content: flex-end; }
+  .advanced-grid label { white-space: nowrap; }
+  .dispense-run { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px; padding-top: 4px; }
+  .run-summary { min-width: 0; }
+  .run-summary strong { display: block; font-size: 21px; }
+  .run-summary span { color: var(--muted); font-size: 16px; }
+  .run-buttons { display: flex; gap: 12px; align-items: center; }
+  .plate-map.compact { gap: 4px; }
+  .plate-map.compact.w96 { grid-template-columns: 104px repeat(12, minmax(0, 1fr)); }
+  .plate-map.compact.w384 { grid-template-columns: 104px repeat(24, minmax(0, 1fr)); gap: 3px; }
+  .plate-map.compact .cell { height: 38px; border-width: 1px; border-radius: 6px; }
+  .plate-map.compact .band-label { padding: 4px 8px; }
+  .plate-map.compact .band-label strong { font-size: 12px; }
+  .plate-map.compact .band-label span { font-size: 10px; }
+  .plate-map.compact .col-head { font-size: 11px; }
+  /* --- Protocol builder --------------------------------------------------- */
+  .protocol-card { display: flex; flex-direction: column; gap: 14px; }
+  .protocol-head { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; gap: 14px; align-items: end; }
+  .protocol-head .btn { min-height: 60px; }
+  .protocol-actions { display: flex; gap: 8px; }
+  .protocol-body { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 14px; min-height: 0; }
+  .protocol-list { display: flex; flex-direction: column; gap: 10px; min-height: 0; }
+  .list-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+  .protocol-steps { flex: 1; display: flex; flex-direction: column; gap: 6px; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding-right: 2px; }
+  .pstep { display: grid; grid-template-columns: 26px minmax(0, 1fr) auto; gap: 9px; align-items: center; padding: 9px 10px; border: 1px solid var(--line); border-radius: 9px; background: #fbfcfb; cursor: pointer; text-align: left; }
+  .pstep.active { border-color: var(--green); background: #fff; box-shadow: 0 0 0 2px rgba(18,107,82,.14); }
+  .pstep.running { border-color: var(--green); background: var(--green-soft); }
+  .pstep.done { opacity: .55; }
+  .pstep .num { width: 32px; height: 32px; display: grid; place-items: center; border-radius: 99px; background: #e7edea; color: #5c6965; font-size: 15px; font-weight: 800; }
+  .pstep.active .num, .pstep.running .num { color: #fff; background: var(--green); }
+  .pstep-title { display: block; overflow: hidden; font-size: 17px; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
+  .pstep-meta { display: block; overflow: hidden; color: var(--muted); font-size: 15px; text-overflow: ellipsis; white-space: nowrap; }
+  .pstep-tools { display: flex; gap: 4px; }
+  .pstep-tools button { width: 38px; height: 38px; border: 1px solid #d5ddda; border-radius: 7px; color: #71807b; background: #fff; cursor: pointer; font-size: 17px; line-height: 1; }
+  .pstep-tools button:hover { border-color: #9fb0aa; }
+  .pstep-tools button:disabled { opacity: .35; cursor: not-allowed; }
+  .palette { display: flex; flex-wrap: wrap; gap: 6px; }
+  .palette button { flex: 1 1 auto; min-height: 54px; padding: 8px 13px; border: 1px dashed #bccbc5; border-radius: 8px; color: var(--green-dark); background: #f7faf8; cursor: pointer; font-size: 17px; font-weight: 650; }
+  .palette button:hover { border-style: solid; background: var(--green-soft); }
+  .palette button:disabled { cursor: not-allowed; opacity: .4; }
+  .protocol-editor { display: flex; flex-direction: column; gap: 12px; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 14px 16px; border: 1px solid var(--line); border-radius: 12px; background: #fbfcfb; }
+  .editor-empty { margin: auto; color: var(--muted); text-align: center; }
+  .field-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; align-items: end; }
+  .protocol-dispense-head { display: grid; grid-template-columns: minmax(150px, .65fr) minmax(280px, 1fr); gap: 12px; align-items: end; }
+  .protocol-dispense-plate { min-width: 0; }
+  .stepper.small { grid-template-columns: 48px minmax(0, 1fr) 48px; gap: 6px; }
+  .stepper.small button { min-height: 58px; font-size: 26px; }
+  .stepper.small input { min-height: 58px; font-size: 22px; }
+  .quick-card { display: flex; flex-direction: column; gap: 14px; }
+  .quick-editor { display: flex; flex-direction: column; gap: 12px; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+  .settings-card { display: grid; grid-template-columns: 230px minmax(0, 1fr); gap: 18px; }
+  .settings-menu { display: flex; flex-direction: column; gap: 7px; padding-right: 18px; border-right: 1px solid var(--line); }
+  .settings-menu h3 { margin-bottom: 8px; }
+  .settings-menu button { width: 100%; min-height: 58px; display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 9px; color: #4c5a56; background: #fff; cursor: pointer; text-align: left; font-weight: 650; }
+  .settings-menu button:hover { border-color: #9fb0aa; background: #f6f9f7; }
+  .settings-menu button.active { border-color: var(--green); color: var(--green-dark); background: var(--green-soft); font-weight: 700; }
+  .settings-icon { width: 20px; flex: 0 0 auto; text-align: center; }
+  .settings-content { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+  .settings-view { display: none; min-width: 0; min-height: 0; height: 100%; }
+  .settings-view.active { display: flex; flex-direction: column; }
+  .geometry-help { margin: 5px 0 14px; color: var(--muted); font-size: 16px; }
+  .geometry-grid { display: grid; gap: 9px; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+  .geometry-row { display: grid; grid-template-columns: minmax(150px, 1.25fr) repeat(3, minmax(130px, 1fr)); gap: 10px; align-items: end; padding: 11px 13px; border: 1px solid var(--line); border-radius: 10px; background: #fbfcfb; }
+  .geometry-row h4 { align-self: center; }
+  .geometry-row input { min-height: 54px; }
+  .geometry-actions { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: auto; padding-top: 14px; }
+  .geometry-status { color: var(--muted); font-size: 15px; }
+  .geometry-actions .right { display: flex; gap: 9px; }
+  .method-settings-grid { display: grid; gap: 9px; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+  .method-settings-row { display: grid; grid-template-columns: minmax(190px, 1.35fr) minmax(180px, .8fr) minmax(150px, .65fr); gap: 12px; align-items: end; padding: 11px 13px; border: 1px solid var(--line); border-radius: 10px; background: #fbfcfb; }
+  .method-settings-row h4 { align-self: center; }
+  .method-settings-row input, .method-settings-row select { min-height: 54px; }
+  .auto-prime-panel { flex: 1; display: flex; flex-direction: column; gap: 14px; min-height: 0; }
+  .auto-prime-due { display: flex; align-items: center; justify-content: space-between; gap: 18px; min-height: 92px; padding: 14px 18px; border: 1px solid #b6d8c9; border-radius: 11px; background: var(--green-soft); }
+  .auto-prime-due strong { display: block; color: var(--green-dark); font-size: 27px; }
+  .auto-prime-due span { color: var(--muted); font-size: 16px; text-align: right; }
+  /* --- shared -----------------------------------------------------------*/
+  .action-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; margin-top: 16px; }
+  .action-row .right { display: flex; gap: 8px; }
+  .step-empty { padding: 24px; text-align: center; color: var(--muted); font-size: 18px; border: 1px dashed #cdd8d3; border-radius: 9px; background: #fafcfb; }
+  /* --- Guided procedures (load reagent, change reagent, end dispensing) -- */
+  .proc-card { display: flex; flex-direction: column; gap: 16px; }
+  .stepper-track { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 10px; margin: 0; padding: 0; list-style: none; }
+  .track-step { display: flex; gap: 12px; align-items: center; min-height: 76px; padding: 10px 13px; border: 1px solid var(--line); border-radius: 10px; background: #fbfcfb; color: #5c6965; cursor: pointer; text-align: left; }
+  .track-step > span:last-child { min-width: 0; }
+  .track-step .num { width: 36px; height: 36px; flex: 0 0 auto; display: grid; place-items: center; border-radius: 99px; background: #e7edea; color: #5c6965; font-size: 17px; font-weight: 800; }
+  .track-step.done { border-color: #b6d8c9; background: var(--green-soft); color: var(--green-dark); }
+  .track-step.done .num, .track-step.active .num { color: #fff; background: var(--green); }
+  .track-step.active { border-color: var(--green); color: var(--ink); background: #fff; box-shadow: 0 0 0 2px rgba(18,107,82,.15); }
+  .track-step:disabled { cursor: not-allowed; opacity: .45; }
+  .track-title { display: block; font-size: 18px; font-weight: 700; line-height: 1.25; }
+  .proc-body { display: flex; flex-direction: column; gap: 14px; min-height: 0; }
+  .proc-instruction { padding: 16px 18px; border-left: 3px solid var(--green); border-radius: 10px; background: var(--green-soft); color: #17453a; font-size: 21px; }
+  .confirm-toggle { display: flex; gap: 15px; align-items: center; width: 100%; min-height: 84px; padding: 12px 17px; border: 2px solid #e0c99c; border-radius: 11px; color: #6d4f22; background: #fff9ec; cursor: pointer; font-size: 21px; font-weight: 650; text-align: left; }
+  .confirm-toggle .box { width: 33px; height: 33px; flex: 0 0 auto; display: grid; place-items: center; border: 2px solid #cbb27e; border-radius: 7px; background: #fff; font-size: 16px; font-weight: 800; }
+  .confirm-toggle.on { border-color: var(--green); color: var(--green-dark); background: var(--green-soft); }
+  .confirm-toggle.on .box { color: #fff; border-color: var(--green); background: var(--green); }
+  .confirm-toggle:disabled { cursor: not-allowed; opacity: .5; }
+  .proc-ready { display: grid; place-items: center; gap: 9px; padding: 30px; border: 1px solid #b6d8c9; border-radius: 12px; color: var(--green-dark); background: var(--green-soft); text-align: center; }
+  .proc-ready strong { font-size: 30px; }
+  .pill { display: inline-block; padding: 3px 11px; border-radius: 99px; color: #56645f; background: #edf1ef; font-size: 15px; font-weight: 700; }
+  .pill.ok { color: #116044; background: #dff3e9; }
+  .pill.busy { color: #7d520f; background: #fff0cd; }
+  .pill.err { color: #8a2d27; background: #f9e2df; }
+  #log { flex: 1; min-height: 0; overflow: auto; padding: 16px 18px; color: #bdd1ca; background: #13201d; border-radius: 11px; font: 15px/1.6 ui-monospace, Consolas, monospace; white-space: pre-wrap; }
+  .modal { position: fixed; z-index: 30; inset: 0; display: grid; place-items: center; padding: 20px; background: rgba(19,32,29,.45); }
+  .modal-card { display: flex; flex-direction: column; gap: 0; width: min(830px, 100%); max-height: 100%; overflow: hidden; border-radius: 13px; background: var(--paper); box-shadow: 0 24px 60px rgba(0,0,0,.3); }
+  .modal-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 20px; border-bottom: 1px solid var(--line); }
+  .modal-body { display: flex; flex-direction: column; gap: 16px; padding: 18px 20px; overflow-y: auto; }
+  .modal-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 14px; padding: 14px 20px; border-top: 1px solid var(--line); background: var(--wash); }
+  .modal-foot .right { display: flex; gap: 9px; }
+  #methodRestore { margin-right: auto; }
+  .modal-section > h4 { margin-bottom: 4px; }
+  .modal-section .help { display: block; margin-bottom: 10px; }
+  .modal-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; }
+  .save-default { display: flex; gap: 11px; align-items: center; margin: 0; color: var(--ink); font-size: 18px; font-weight: 650; letter-spacing: 0; text-transform: none; cursor: pointer; }
+  .save-default input { width: 24px; min-height: 24px; margin: 0; }
+  .icon-close { width: 50px; height: 50px; border: 1px solid #d5ddda; border-radius: 8px; color: #71807b; background: #fff; cursor: pointer; font-size: 22px; line-height: 1; }
+  .settings-button { min-height: 52px; padding: 9px 17px; font-size: 17px; }
+  .keypad { z-index: 40; }
+  .keypad-card { width: min(460px, 100%); }
+  .keypad-card.text { width: min(900px, 100%); }
+  .keypad-body { display: flex; flex-direction: column; gap: 12px; padding: 18px 20px; }
+  .keypad-display { min-height: 74px; display: flex; align-items: center; justify-content: flex-end; padding: 10px 18px; border: 2px solid var(--green); border-radius: 10px; background: #fbfcfb; font-size: 38px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .keypad-card.text .keypad-display { justify-content: flex-start; overflow: hidden; font-size: 27px; text-overflow: ellipsis; white-space: nowrap; }
+  .keypad-display.invalid { border-color: var(--red); color: var(--red); }
+  .keypad-range { color: var(--muted); font-size: 16px; text-align: center; }
+  .keypad-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .keypad-grid button { min-height: 74px; border: 1px solid #cbd6d1; border-radius: 11px; background: #fff; color: var(--ink); cursor: pointer; font-size: 30px; font-weight: 650; }
+  .keypad-grid button:hover { background: var(--green-soft); border-color: var(--green); }
+  .keypad-grid button.wide { font-size: 24px; }
+  .keypad-grid.text { grid-template-columns: repeat(10, 1fr); gap: 7px; }
+  .keypad-grid.text button { min-height: 49px; padding: 5px; font-size: 20px; }
+  .keypad-grid.text button.space { grid-column: 1 / -1; font-size: 17px; }
+  .keypad-grid.text button.shift-on { border-color: var(--green); background: var(--green-soft); }
+  .toast { position: fixed; z-index: 20; right: 22px; bottom: 22px; max-width: 400px; padding: 13px 16px; border-radius: 9px; color: #fff; background: #263c36; box-shadow: 0 12px 30px rgba(0,0,0,.22); font-size: 19px; opacity: 0; transform: translateY(8px); pointer-events: none; transition: .2s; }
+  .toast.show { opacity: 1; transform: translateY(0); }
+  .toast.error { background: #80352e; }
+  .auto-prime-notice { position: fixed; z-index: 25; top: 14px; left: 50%; transform: translateX(-50%); padding: 14px 24px; border: 2px solid #d39a31; border-radius: 11px; color: #69450c; background: #fff0cd; box-shadow: 0 12px 30px rgba(0,0,0,.2); font-size: 21px; font-weight: 800; pointer-events: none; }
+  [hidden] { display: none !important; }
+  /* Raspberry Pi Touch Display 2: 1280x720 landscape kiosk layout. */
+  @media (min-width: 1000px) and (max-height: 800px) and (orientation: landscape) {
+    html, body { width: 100%; height: 100%; overflow: hidden; }
+    body { font-size: 19px; }
+    main {
+      display: grid;
+      grid-template-rows: 72px minmax(0, 1fr);
+      gap: 9px;
+      width: 100%;
+      height: 100vh;
+      height: 100dvh;
+      max-width: none;
+      padding: 9px;
+      overflow: hidden;
+    }
+    .statusbar { margin: 0; border-radius: 9px; box-shadow: none; line-height: 1.25; }
+    .metric { min-height: 70px; padding: 7px 12px; font-size: 13px; line-height: 1.3; }
+    .metric strong { margin-top: 0; font-size: 17px; line-height: 1.25; }
+    .metric .small { font-size: 13px; }
+    .metric .eyebrow { font-size: 12px; }
+    .instrument-summary { gap: 12px; }
+    .cassette-summary { gap: 10px; padding-right: 8px; }
+    .lifetime-dots { margin-top: 3px; }
+    .refresh-cell { flex-direction: row; align-items: center; padding: 7px; }
+    .btn { min-height: 52px; padding: 10px 18px; }
+    .workspace {
+      grid-template-columns: 232px minmax(0, 1fr);
+      gap: 9px;
+      height: 100%;
+      min-height: 0;
+      align-items: stretch;
+    }
+    .side { position: relative; align-self: stretch; overflow: visible; border-radius: 9px; box-shadow: none; }
+    .side button { min-height: 72px; padding: 12px 12px; font-size: 20px; white-space: nowrap; }
+    .work-content { position: relative; min-width: 0; min-height: 0; }
+    .panel.active { height: 100%; min-height: 0; }
+    .panel.active { display: block; }
+    .card { margin: 0; padding: 14px 16px; border-radius: 9px; box-shadow: none; }
+    .panel > .card { height: 100%; min-height: 0; overflow: hidden; }
+    .card-head { gap: 10px; margin-bottom: 10px; }
+    .dispense-card { gap: 12px; }
+    .dispense-body { flex: 1; justify-content: space-between; overflow-y: auto; overscroll-behavior: contain; gap: 13px; }
+    .dispense-top { gap: 14px; }
+    .stepper button, .stepper input { min-height: 54px; }
+    .plate { padding: 10px 12px; }
+    .plate-map.w96 .cell { height: 64px; }
+    .plate-map.w384 .cell { height: 40px; }
+    .plate-map.w96 .band-label { min-height: 64px; justify-content: center; }
+    .map-head { margin-bottom: 8px; }
+    details.advanced > summary { min-height: 58px; }
+    .advanced-grid { grid-template-columns: repeat(auto-fit, minmax(148px, 1fr)); gap: 10px; padding-top: 8px; }
+    .advanced-body { padding: 2px 14px 10px; }
+    .dispense-run { padding-top: 0; }
+    .protocol-card { gap: 10px; }
+    .protocol-head .btn, .protocol-head input, .protocol-head select { min-height: 56px; }
+    .protocol-body { gap: 10px; grid-template-columns: 320px minmax(0, 1fr); }
+    .protocol-editor { gap: 10px; padding: 11px 13px; }
+    .quick-card { gap: 11px; }
+    .quick-editor { flex: 1; gap: 11px; }
+    .settings-card { grid-template-columns: 210px minmax(0, 1fr); gap: 14px; }
+    .settings-menu { padding-right: 14px; }
+    .settings-menu button { min-height: 52px; padding: 8px 10px; }
+    .geometry-row { padding: 8px 10px; }
+    .geometry-row input { min-height: 50px; }
+    .method-settings-row { padding: 8px 10px; }
+    .method-settings-row input, .method-settings-row select { min-height: 50px; }
+    .plate-map.compact .cell { height: 34px; }
+    .palette button { min-height: 46px; font-size: 15px; padding: 6px 10px; }
+    .btn.big { min-height: 74px; font-size: 24px; }
+    .action-row { margin-top: 9px; }
+    .step-empty { padding: 16px; font-size: 17px; }
+    .proc-card { gap: 12px; }
+    .track-step { min-height: 72px; padding: 11px 12px; }
+    .proc-body { flex: 1; justify-content: center; overflow-y: auto; overscroll-behavior: contain; gap: 12px; }
+    .proc-instruction { padding: 14px 16px; }
+    .toast { top: 58px; right: 12px; bottom: auto; }
+    .modal { padding: 12px; }
+    .modal-head, .modal-foot { padding: 11px 16px; }
+    .modal-body { gap: 12px; padding: 13px 16px; }
+    .keypad-body { gap: 9px; padding: 13px 16px; }
+    .keypad-display { min-height: 62px; font-size: 32px; }
+    .keypad-grid button { min-height: 62px; font-size: 26px; }
+  }
+  @media (max-width: 840px) {
+    main { padding: 20px 16px 34px; }
+    .statusbar { grid-template-columns: 1fr; } .refresh-cell { grid-column: 1 / -1; }
+    .instrument-summary { grid-template-columns: 1fr; }
+    .cassette-summary { grid-template-columns: 1fr 1fr 68px auto; }
+    .workspace { grid-template-columns: 1fr; } .side { display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: auto; }
+    .side::after { display: none; }
+    .nav-group { display: contents; }
+    .side button { justify-content: center; border-right: 1px solid var(--line); border-bottom: 0; }
+    .dispense-top { grid-template-columns: 1fr; }
+    .plate { overflow-x: auto; }
+    .plate-map { min-width: 620px; }
+  }
+  @media (max-width: 560px) {
+    .nav-icon { display: none; }
+    .card-head, .dispense-run { align-items: stretch; flex-direction: column; }
+    .cassette-summary { grid-template-columns: 1fr; }
+    .stepper-track { grid-auto-flow: row; }
+    .protocol-head, .protocol-body { grid-template-columns: 1fr; }
+    .protocol-dispense-head { grid-template-columns: 1fr; }
+    .side button { padding: 12px 6px; font-size: 13px; }
+    .run-buttons { display: grid; grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <section class="statusbar" aria-label="Instrument status">
+    <div class="metric instrument-summary">
+      <div><span class="eyebrow">Instrument</span><strong id="deviceName">MultiFlo — connecting</strong></div>
+      <div><span class="eyebrow">State</span><strong id="programState">—</strong></div>
+    </div>
+    <div class="metric cassette-summary" id="cassetteSummary">
+      <div><span class="eyebrow">Cassette fitted</span><strong id="fittedCassette">—</strong></div>
+      <div><div class="lifetime-head"><span class="eyebrow">Lifetime</span><span class="lifetime-value" id="usageValue">Awaiting cassette</span></div><div class="lifetime-dots" id="usageDots" aria-label="Cassette lifetime usage"><span class="lifetime-dot"></span><span class="lifetime-dot"></span><span class="lifetime-dot"></span><span class="lifetime-dot"></span></div></div>
+      <div class="plate-count"><span class="eyebrow">Plate count</span><strong id="plateCount">—</strong></div>
+      <button class="btn replace-compact" id="replaceCassette" disabled>Replaced</button>
+    </div>
+    <div class="refresh-cell"><button class="btn" id="refresh">Refresh</button><button class="btn danger power-button" id="powerOff" aria-label="Turn off Raspberry Pi" title="Turn off Raspberry Pi">&#x23FB;</button><button class="btn danger" id="reconcile" hidden>Reconcile</button></div>
+  </section>
+  <div class="workspace">
+    <nav class="side" aria-label="Dashboard sections">
+      <div class="nav-group nav-primary">
+        <button data-panel="load"><span class="nav-icon">⤓</span><span>Load reagent</span></button>
+        <button class="active" data-panel="dispense"><span class="nav-icon">▦</span><span>Dispense</span></button>
+        <button data-panel="reagent"><span class="nav-icon">⇄</span><span>Change reagent</span></button>
+        <button data-panel="end"><span class="nav-icon">⤒</span><span>End dispensing</span></button>
+      </div>
+      <div class="nav-group nav-protocol">
+        <button data-panel="protocol"><span class="nav-icon">☰</span><span>Protocol</span></button>
+        <button data-panel="quick"><span class="nav-icon">⚡</span><span>Quick</span></button>
+      </div>
+      <div class="nav-group nav-settings">
+        <button data-panel="settings"><span class="nav-icon">⚙</span><span>Settings</span></button>
+      </div>
+    </nav>
+    <div class="work-content">
+      <section class="panel active" id="panel-dispense">
+        <div class="card dispense-card">
+          <div class="dispense-body">
+            <div class="dispense-top">
+              <div><label id="plateLabel">Plate</label><div class="segmented" id="plateChoice" role="group" aria-labelledby="plateLabel"></div></div>
+              <div><label for="volume">Volume (uL/well)</label>
+                <div class="stepper">
+                  <button type="button" id="volumeDown" aria-label="Decrease volume">−</button>
+                  <input id="volume" type="number" value="10" min="1" max="1200" step="1" inputmode="numeric" />
+                  <button type="button" id="volumeUp" aria-label="Increase volume">+</button>
+                </div>
+              </div>
+            </div>
+            <div>
+              <div class="map-head">
+                <div><h3>Columns</h3><div class="help" id="selectionText">All 12 columns selected</div></div>
+                <div class="map-actions"><button class="btn" id="selectAllColumns">All</button><button class="btn" id="clearColumns">None</button></div>
+              </div>
+              <div class="plate"><div class="plate-map w96" id="plateMap"></div></div>
+              
+            </div>
+            <details class="advanced" id="advanced">
+              <summary>Advanced settings</summary>
+              <div class="advanced-body">
+                <div class="advanced-grid">
+                  <div><label for="flowRate">Flow rate</label><select id="flowRate"><option value="low">Low</option><option value="medium" selected>Medium</option><option value="high">High</option></select></div>
+                  <div><label for="preVolume">Pre-dispense (uL/well)</label><input id="preVolume" type="number" value="10" min="0" max="100" step="1" inputmode="numeric" /></div>
+                  <div><label for="preCycles">Cycles</label><input id="preCycles" type="number" value="2" min="0" max="255" inputmode="numeric" /></div>
+                  <div><label for="xOffset">X offset (steps)</label><input id="xOffset" type="number" value="0" min="-60" max="60" inputmode="numeric" /></div>
+                  <div><label for="yOffset">Y offset (steps)</label><input id="yOffset" type="number" value="0" min="-40" max="40" inputmode="numeric" /></div>
+                  <div><label for="zOffset">Z offset (steps)</label><input id="zOffset" type="number" value="0" min="-300" max="300" inputmode="numeric" /></div>
+                  <div><label>&nbsp;</label><button class="btn" id="resetAdvanced" style="width:100%;min-height:46px">Reset</button></div>
+                </div>
+              </div>
+            </details>
+          </div>
+          <div class="dispense-run">
+            <div class="run-summary"><strong id="dispenseTotal">—</strong><span id="dispenseProgress">Ready</span></div>
+            <div class="run-buttons">
+              <button class="btn danger abort-button" disabled>Abort</button>
+              <button class="btn primary big" id="runDispense" disabled>Run dispense</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel" id="panel-protocol">
+        <div class="card protocol-card">
+          <div class="protocol-head">
+            <div><label for="protocolPick">Saved on this instrument</label><select id="protocolPick"></select></div>
+            <div><label for="protocolName">Protocol name</label><input id="protocolName" data-keypad="text" maxlength="60" placeholder="Name this protocol" /></div>
+            <div class="protocol-actions">
+              <button class="btn" id="protocolNew">New</button>
+              <button class="btn" id="protocolSave">Save</button>
+              <button class="btn danger" id="protocolDelete">Delete</button>
+            </div>
+          </div>
+          <div class="protocol-body">
+            <div class="protocol-list">
+              <div class="list-head"><h4>Steps</h4><span class="help" id="protocolSummary">No steps yet</span></div>
+              <div class="protocol-steps" id="protocolStepList"></div>
+              <div class="palette" id="protocolPalette"></div>
+            </div>
+            <div class="protocol-editor" id="protocolEditor"></div>
+          </div>
+          <div class="dispense-run">
+            <div class="run-summary"><strong id="protocolAction">—</strong><span id="protocolProgress">Ready</span></div>
+            <div class="run-buttons">
+              <button class="btn primary" id="protocolContinue" hidden>Continue</button>
+              <button class="btn danger abort-button" disabled>Abort</button>
+              <button class="btn primary big" id="protocolRun" disabled>Run protocol</button>
+            </div>
+          </div>
+        </div>
+      </section>
+      <section class="panel" id="panel-quick">
+        <div class="card quick-card">
+          <div class="segmented" id="quickChoice" role="group" aria-label="Operation"></div>
+          <div class="quick-editor" id="quickEditor"></div>
+          <div class="dispense-run">
+            <div class="run-summary"><strong id="quickAction">—</strong><span id="quickProgress">Ready</span></div>
+            <div class="run-buttons">
+              <button class="btn danger abort-button" disabled>Abort</button>
+              <button class="btn primary big" id="quickRun" disabled>Run</button>
+            </div>
+          </div>
+        </div>
+      </section>
+      <section class="panel" id="panel-settings">
+        <div class="card settings-card">
+          <aside class="settings-menu" aria-label="Settings categories">
+            <div class="eyebrow">Settings</div>
+            <h3>Categories</h3>
+            <button type="button" class="active" data-settings-view="geometry" aria-current="page"><span class="settings-icon">▦</span><span>Plate Geometry</span></button>
+            <button type="button" data-settings-view="maintenance"><span class="settings-icon">●</span><span>Maintenance</span></button>
+            <button type="button" data-settings-view="load"><span class="settings-icon">⤓</span><span>Load reagent</span></button>
+            <button type="button" data-settings-view="reagent"><span class="settings-icon">⇄</span><span>Change reagent</span></button>
+            <button type="button" data-settings-view="end"><span class="settings-icon">⤒</span><span>End dispensing</span></button>
+            <button type="button" data-settings-view="activity"><span class="settings-icon">≡</span><span>Activity log</span></button>
+          </aside>
+          <div class="settings-content">
+            <section class="settings-view active" id="settings-geometry">
+              <div><div class="eyebrow">Plate Geometry</div><h3>Default dispense position</h3></div>
+              <p class="geometry-help">Defaults apply to new or unspecified dispenses. X and Y are signed offsets; Z is the absolute height above the carrier. Per-dispense Advanced offsets are added to these values.</p>
+              <div class="geometry-grid" id="geometryGrid"></div>
+              <div class="geometry-actions">
+                <span class="geometry-status" id="geometryStatus">Loading defaults…</span>
+                <div class="right"><button class="btn" id="geometryRestore">Restore built-in values</button><button class="btn primary" id="geometrySave">Save defaults</button></div>
+              </div>
+            </section>
+            <section class="settings-view" id="settings-maintenance">
+              <div><div class="eyebrow">Maintenance</div><h3>Auto prime</h3></div>
+              <p class="geometry-help">A slow water prime runs two hours after the last completed prime or dispense.</p>
+              <div class="auto-prime-panel">
+                <div class="auto-prime-due">
+                  <div><div class="eyebrow">Next prime due</div><strong id="autoPrimeDue">Loading…</strong></div>
+                  <span id="autoPrimeCountdown">Reading schedule</span>
+                </div>
+                <div class="proc-instruction">Keep the tubing in clean water whenever the instrument is idle. Auto prime starts without confirmation.</div>
+                <div class="method-settings-row">
+                  <h4 id="autoPrimeCassette">Waiting for cassette</h4>
+                  <div><label for="autoPrimeVolume">Volume (uL/well)</label><input id="autoPrimeVolume" type="number" inputmode="numeric" min="1" max="3000" value="200" /></div>
+                  <div><label for="autoPrimeSpeed">Speed</label><select id="autoPrimeSpeed" disabled><option selected>Slow</option></select></div>
+                </div>
+                <div class="geometry-actions">
+                  <span class="geometry-status" id="autoPrimeStatus">Loading settings…</span>
+                  <div class="right"><button class="btn" id="autoPrimeRestore">Restore built-in values</button><button class="btn primary" id="autoPrimeSave">Save defaults</button></div>
+                </div>
+              </div>
+            </section>
+            <section class="settings-view" id="settings-load" data-method-settings="load"></section>
+            <section class="settings-view" id="settings-reagent" data-method-settings="reagent"></section>
+            <section class="settings-view" id="settings-end" data-method-settings="end"></section>
+            <section class="settings-view" id="settings-activity">
+              <div><div class="eyebrow">Activity log</div><h3>Recent dashboard activity</h3></div>
+              <p class="geometry-help">Connection, validation, protocol, and instrument events from this dashboard session.</p>
+              <div id="log" role="log" aria-live="polite"></div>
+            </section>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+</main>
+<div class="modal keypad" id="keypadModal" hidden>
+  <div class="modal-card keypad-card" id="keypadCard" role="dialog" aria-modal="true" aria-labelledby="keypadTitle">
+    <div class="modal-head"><h3 id="keypadTitle">Value</h3><button class="icon-close" id="keypadClose" aria-label="Close">×</button></div>
+    <div class="keypad-body">
+      <div class="keypad-display" id="keypadValue">0</div>
+      <div class="keypad-range" id="keypadRange"></div>
+      <div class="keypad-grid" id="keypadGrid"></div>
+    </div>
+    <div class="modal-foot"><button class="btn" id="keypadClear">Clear</button><div class="right"><button class="btn" id="keypadCancel">Cancel</button><button class="btn primary" id="keypadOk">Set</button></div></div>
+  </div>
+</div>
+<div class="auto-prime-notice" id="autoPrimeNotice" role="status" aria-live="assertive" hidden>Auto prime. Wait 1 min</div>
+<div class="toast" id="toast"></div>
+<script>
+const API = "";
+const TERMINAL = ["completed", "failed", "aborted", "unknown_execution_state"];
+const FALLBACK_PLATE_GEOMETRY = {
+  "96_well": {x_offset_steps: 0, y_offset_steps: 0, dispense_height_steps: 336},
+  "96_deep_well": {x_offset_steps: 0, y_offset_steps: 0, dispense_height_steps: 1020},
+  "384_well": {x_offset_steps: 0, y_offset_steps: 0, dispense_height_steps: 333},
+  "384_deep_well": {x_offset_steps: 0, y_offset_steps: 0, dispense_height_steps: 553},
+};
+const PLATE_GEOMETRY_ORDER = ["96_well", "96_deep_well", "384_well", "384_deep_well"];
+const AUTO_PRIME_BUILT_IN_VOLUMES = {"1ul": 50, "5ul": 200};
+const cloneGeometry = geometry => JSON.parse(JSON.stringify(geometry));
+const state = { cassette: null, panel: "dispense", dispense: null, procedures: {}, keypad: null, settings: {procedures: {}}, protocol: null, quick: null, library: [], protocolRun: null, runResolver: null, waitResolver: null, usage: null, activeRunId: null, activeKind: null, pollTimer: null, fittedCassette: null, deviceReady: false, reconciliationRequired: false, plateGeometry: cloneGeometry(FALLBACK_PLATE_GEOMETRY), builtInPlateGeometry: cloneGeometry(FALLBACK_PLATE_GEOMETRY), geometryOverrides: [], geometryDraft: null, autoPrime: null, autoPrimeDraft: {...AUTO_PRIME_BUILT_IN_VOLUMES}, autoPrimeDirty: false, autoPrimeWarnedDue: null };
+const $ = id => document.getElementById(id);
+const qsa = selector => Array.from(document.querySelectorAll(selector));
+function log(message) { $("log").textContent += `[${new Date().toLocaleTimeString()}] ${message}\n`; $("log").scrollTop = $("log").scrollHeight; }
+function toast(message, error = false) { const el = $("toast"); el.textContent = message; el.className = `toast show${error ? " error" : ""}`; clearTimeout(toast.timer); toast.timer = setTimeout(() => el.className = "toast", 3400); }
+function errorDetail(data) { const detail = data && data.detail !== undefined ? data.detail : data; if (Array.isArray(detail)) return detail.map(x => x.msg || JSON.stringify(x)).join("; "); return typeof detail === "string" ? detail : JSON.stringify(detail || "Unknown error"); }
+function pill(value) { const cls = ["completed", "ready", "idle"].includes(value) ? "ok" : ["running", "queued", "busy", "aborting", "paused"].includes(value) ? "busy" : ["failed", "error", "unknown_execution_state", "reconciliation_required"].includes(value) ? "err" : ""; return `<span class="pill ${cls}">${String(value).replaceAll("_", " ")}</span>`; }
+function cassetteLabel(value) { return value === "1ul" ? "1 uL" : value === "5ul" ? "5 uL" : value || "—"; }
+function plateLabel(value) { return {"96_well":"96-well", "96_deep_well":"96 deep-well", "384_well":"384-well", "384_deep_well":"384 deep-well"}[value] || value; }
+function plateShortLabel(value) { return {"96_well":"96", "96_deep_well":"96DW", "384_well":"384", "384_deep_well":"384DW"}[value] || value; }
+function opLabel(value) { return {peristaltic_dispense:"Dispense", peristaltic_prime:"Prime", peristaltic_purge:"Purge", shake:"Shake", soak:"Pause"}[value] || value; }
+function is384Plate(plate) { return plate === "384_well" || plate === "384_deep_well"; }
+function geometryForPlate(plate) { return state.plateGeometry[plate] || state.builtInPlateGeometry[plate] || FALLBACK_PLATE_GEOMETRY[plate]; }
+function axisFromOffset(plate, field, offset) {
+  if (!Number.isInteger(offset)) throw new Error(`${field === "x_offset_steps" ? "X" : "Y"} offset must be a whole number`);
+  const value = geometryForPlate(plate)[field] + offset;
+  const [minimum, maximum] = field === "x_offset_steps" ? [-60, 60] : [-40, 40];
+  if (value < minimum || value > maximum) throw new Error(`${field === "x_offset_steps" ? "X" : "Y"} offset resolves outside the safe ${minimum} to +${maximum} step range for ${plateLabel(plate)}`);
+  return value;
+}
+function axisOffsetFromValue(plate, field, value) { return value == null ? 0 : value - geometryForPlate(plate)[field]; }
+function dispenseHeightFromOffset(plate, offset) {
+  if (!Number.isInteger(offset)) throw new Error("Z offset must be a whole number");
+  const height = geometryForPlate(plate).dispense_height_steps + offset;
+  if (height < 100 || height > 1100) throw new Error(`Z offset ${offset} is outside the safe driver height range for ${plateLabel(plate)}`);
+  return height;
+}
+function zOffsetFromHeight(plate, height) { return height == null ? 0 : height - geometryForPlate(plate).dispense_height_steps; }
+function dispensePlatesForCassette() { return state.cassette === "1ul" ? PLATE_GEOMETRY_ORDER : state.cassette === "5ul" ? ["96_well", "96_deep_well"] : ["96_well"]; }
+function newSelection(plate = "96_well") { const selection = {plate, columns: new Set(), rowSections: "all"}; resetSelection(selection); return selection; }
+function selectionColumnCount(selection) { return is384Plate(selection.plate) ? 24 : 12; }
+function selectionRowCount(selection) { return is384Plate(selection.plate) ? (selection.rowSections === "all" ? 16 : 8) : 8; }
+function resetSelection(selection) { selection.columns = new Set(Array.from({length: selectionColumnCount(selection)}, (_, i) => i + 1)); selection.rowSections = "all"; }
+function volumeBounds() { return state.cassette === "5ul" ? {min: 5, max: 2500, step: 5} : {min: 1, max: 1200, step: 1}; }
+async function api(path, options) { const response = await fetch(API + path, options); let data; try { data = await response.json(); } catch (_) { data = {detail: `HTTP ${response.status}`}; } if (!response.ok) { const error = new Error(errorDetail(data)); error.status = response.status; throw error; } return data; }
+async function powerOffPi() {
+  if (state.activeRunId) return toast("Wait for the active run to finish before turning off the Raspberry Pi.", true);
+  if (!window.confirm("Turn off the Raspberry Pi now? Wait until the screen goes dark before disconnecting power.")) return;
+  const button = $("powerOff"); button.disabled = true;
+  try {
+    await api("/v1/system/shutdown", {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({operator_confirmed_shutdown:true})});
+    toast("Shutting down. Wait for the screen to go dark before unplugging power.");
+  } catch (error) {
+    button.disabled = false; toast(error.message, true); log(`Shutdown rejected: ${error.message}`); refreshDevice(true);
+  }
+}
+async function refreshDevice(silent = false) {
+  $("refresh").disabled = true;
+  try {
+    const d = await api("/v1/device"); const serial = d.identity?.product_serial_number || "unknown serial";
+    const fittedCassette = d.modules?.primary_cassette || null; state.reconciliationRequired = Boolean(d.reconciliation_required); state.deviceReady = d.connected && d.program_step_state === "ready" && d.serial_matches_expected && !state.reconciliationRequired;
+    $("deviceName").textContent = `MultiFlo · ${serial}`;
+    applyDetectedCassette(fittedCassette); $("programState").innerHTML = pill(d.program_step_state || "unknown");
+    $("reconcile").hidden = !state.reconciliationRequired;
+    if (!silent) log(`Device ${serial}; fitted=${state.fittedCassette}; state=${d.program_step_state}`);
+  } catch (error) { state.deviceReady = false; state.reconciliationRequired = false; applyDetectedCassette(null); $("reconcile").hidden = true; $("programState").innerHTML = pill("error"); if (!silent) log(`Device check failed: ${error.message}`); }
+  finally { $("refresh").disabled = false; updateActions(); }
+}
+function renderUsage() {
+  const usage = state.cassette ? state.usage?.[state.cassette] : null, dots = qsa("#usageDots .lifetime-dot");
+  if (!state.cassette) { $("usageValue").textContent = "Awaiting cassette"; $("plateCount").textContent = "—"; dots.forEach(dot => dot.classList.remove("on")); $("usageDots").setAttribute("aria-label", "Cassette lifetime unavailable"); $("cassetteSummary").classList.remove("limit"); $("replaceCassette").disabled = true; return; }
+  if (!usage) { $("usageValue").textContent = "Loading…"; $("plateCount").textContent = "—"; dots.forEach(dot => dot.classList.remove("on")); $("cassetteSummary").classList.remove("limit"); $("replaceCassette").disabled = true; return; }
+  const filledQuarters = Math.min(4, Math.floor(usage.percent / 25)); dots.forEach((dot, index) => dot.classList.toggle("on", index < filledQuarters));
+  $("usageValue").textContent = `${usage.used_ml.toLocaleString()} / ${usage.limit_ml.toLocaleString()} mL`; $("plateCount").textContent = usage.plate_count.toLocaleString(); $("usageDots").setAttribute("aria-label", `${usage.percent.toFixed(1)} percent of recommended cassette lifetime used`); $("cassetteSummary").classList.toggle("limit", Boolean(usage.recommended_limit_reached)); updateActions();
+}
+async function refreshUsage(silent = false) { try { const data = await api("/v1/cassette-usage"); state.usage = data.cassettes; renderUsage(); if (!silent) log("Cassette usage loaded from the Pi ledger."); } catch (error) { if (!silent) log(`Usage load failed: ${error.message}`); toast(`Usage unavailable: ${error.message}`, true); } }
+async function resetUsage() { if (!state.cassette) return toast("No cassette is detected.", true); if (state.activeRunId) return toast("Wait for the active run to finish.", true); if (!window.confirm(`Confirm that the physical ${cassetteLabel(state.cassette)} cassette has been replaced with a new cassette. This records a traceable replacement event and starts its usage at zero.`)) return; $("replaceCassette").disabled = true; try { await api(`/v1/cassette-usage/${state.cassette}/reset`, {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({operator_confirmed_replacement:true, cassette_type:state.cassette})}); log(`Recorded ${cassetteLabel(state.cassette)} cassette replacement.`); toast("Cassette replacement recorded."); await refreshUsage(true); } catch (error) { toast(error.message, true); log(`Replacement rejected: ${error.message}`); } finally { updateActions(); } }
+function applyDetectedCassette(value) {
+  const detected = ["1ul", "5ul"].includes(value) ? value : null, changed = state.cassette !== detected; state.fittedCassette = detected; state.cassette = detected; $("fittedCassette").textContent = cassetteLabel(detected);
+  if (detected) { const max = detected === "1ul" ? 1200 : 2500, step = detected === "1ul" ? 1 : 5; for (const id of ["volume", "preVolume"]) { $(id).max = max; $(id).step = step; const current = Number($(id).value); if (current > max || current < step || current % step) $(id).value = detected === "1ul" ? 10 : 50; } $("volume").min = step; $("preVolume").min = 0; }
+  if (changed) resetProcedures();
+  renderPlate(); renderProcedures(); renderAllMethodSettings(); renderAutoPrime(); renderProtocol(); renderQuick(); renderUsage(); updateActions(); if (changed) log(detected ? `Detected ${cassetteLabel(detected)} cassette` : "No cassette detected; cassette-dependent controls disabled");
+}
+function toggleColumn(selection, column) { if (selection.columns.has(column)) selection.columns.delete(column); else selection.columns.add(column); }
+function bandActive(selection, section) { return selection.rowSections === "all" || selection.rowSections === section; }
+function toggleBand(selection, section) {
+  const other = section === "odd" ? "even" : "odd";
+  if (selection.rowSections === "all") selection.rowSections = other;
+  else if (selection.rowSections === section) { toast("At least one row section is required.", true); return false; }
+  else selection.rowSections = "all";
+  return true;
+}
+function renderPlateChoice(container, selection, locked, onChange) {
+  const plates = dispensePlatesForCassette();
+  if (!plates.includes(selection.plate)) { selection.plate = plates[0]; resetSelection(selection); }
+  container.innerHTML = "";
+  for (const plate of plates) {
+    const button = document.createElement("button"); button.type = "button"; button.textContent = plateShortLabel(plate);
+    button.className = plate === selection.plate ? "active" : ""; button.disabled = locked;
+    button.onclick = () => { if (plate === selection.plate) return; selection.plate = plate; resetSelection(selection); onChange(); };
+    container.appendChild(button);
+  }
+}
+function renderPlateMap(container, selection, locked, onChange, compact = false) {
+  const is384 = is384Plate(selection.plate), columns = selectionColumnCount(selection);
+  container.className = `plate-map ${is384 ? "w384" : "w96"}${compact ? " compact" : ""}`; container.innerHTML = "";
+  const corner = document.createElement("span"); corner.className = "band-spacer"; corner.textContent = "Column"; container.appendChild(corner);
+  for (let column = 1; column <= columns; column++) {
+    const head = document.createElement("button"); head.type = "button"; head.className = `col-head ${selection.columns.has(column) ? "selected" : ""}`;
+    head.textContent = column; head.disabled = locked; head.title = `Toggle column ${column}`;
+    head.onclick = () => { toggleColumn(selection, column); onChange(); };
+    container.appendChild(head);
+  }
+  const bands = is384
+    ? [{section: "odd", title: "Row 1"}, {section: "even", title: "Row 2"}]
+    : [{section: "all", title: "Rows A–H"}];
+  for (const band of bands) {
+    const on = band.section === "all" || bandActive(selection, band.section);
+    const label = document.createElement("button"); label.type = "button"; label.className = `band-label ${on ? "on" : ""}`;
+    label.disabled = locked || band.section === "all";
+    label.innerHTML = `<strong>${band.title}</strong>`;
+    if (band.section !== "all") { label.title = on ? `Deselect ${band.title}` : `Select ${band.title}`; label.onclick = () => { if (toggleBand(selection, band.section)) onChange(); }; }
+    container.appendChild(label);
+    for (let column = 1; column <= columns; column++) {
+      const selected = selection.columns.has(column);
+      const cell = document.createElement("button"); cell.type = "button"; cell.className = `cell ${selected && on ? "on" : ""} ${on ? "" : "muted"}`;
+      cell.disabled = locked; cell.title = `Column ${column}`; cell.setAttribute("aria-label", `${band.title} column ${column}`);
+      cell.setAttribute("aria-pressed", String(selected && on));
+      cell.onclick = () => { toggleColumn(selection, column); onChange(); };
+      container.appendChild(cell);
+    }
+  }
+}
+function selectionText(selection) {
+  const is384 = is384Plate(selection.plate);
+  const rows = is384 ? (selection.rowSections === "all" ? "row 1 + row 2" : selection.rowSections === "odd" ? "row 1 only" : "row 2 only") : "rows A–H";
+  return `${selection.columns.size} of ${selectionColumnCount(selection)} columns · ${rows}`;
+}
+function dispenseColumns(selection) {
+  return selection.columns.size === selectionColumnCount(selection) ? "all" : Array.from(selection.columns).sort((a, b) => a - b);
+}
+function renderPlate() {
+  const locked = Boolean(state.activeRunId) || !state.cassette, selection = state.dispense;
+  renderPlateChoice($("plateChoice"), selection, locked, () => { renderPlate(); updateActions(); });
+  renderPlateMap($("plateMap"), selection, locked, () => { renderPlate(); updateActions(); });
+  const geometry = geometryForPlate(selection.plate);
+  $("xOffset").min = -60 - geometry.x_offset_steps; $("xOffset").max = 60 - geometry.x_offset_steps;
+  $("yOffset").min = -40 - geometry.y_offset_steps; $("yOffset").max = 40 - geometry.y_offset_steps;
+  $("zOffset").min = 100 - geometry.dispense_height_steps; $("zOffset").max = 1100 - geometry.dispense_height_steps;
+  $("selectionText").textContent = selectionText(selection);
+  renderDispenseTotal();
+}
+function renderDispenseTotal() {
+  const selection = state.dispense, volume = Number($("volume").value), preVolume = Number($("preVolume").value), preCycles = Number($("preCycles").value);
+  if (!Number.isFinite(volume) || !selection.columns.size) { $("dispenseTotal").textContent = "Select a volume and at least one column"; return; }
+  const wells = selection.columns.size * selectionRowCount(selection), plateUl = volume * wells;
+  const preUl = (Number.isFinite(preVolume) ? preVolume : 0) * (Number.isFinite(preCycles) ? preCycles : 0) * 8;
+  $("dispenseTotal").textContent = `${plateShortLabel(selection.plate)} · ${volume} uL/well × ${wells} wells · ${((plateUl + preUl) / 1000).toFixed(2)} mL total`;
+}
+// The touchscreen has no system keyboard, so editable fields open this keypad
+// on tap. A physical keyboard still works while it is open.
+function keypadLimits(input) {
+  const min = input.min === "" ? -Infinity : Number(input.min);
+  const max = input.max === "" ? Infinity : Number(input.max);
+  const step = Number(input.step) || 1;
+  return {min, max, step};
+}
+function keypadValid(value, input) {
+  const {min, max, step} = keypadLimits(input);
+  if (!Number.isInteger(value) || value < min || value > max) return false;
+  return step <= 1 || Math.abs(value) % step === 0;
+}
+function openKeypad(input) {
+  const mode = input.dataset.keypad === "text" ? "text" : "number";
+  const label = (input.id && document.querySelector(`label[for="${input.id}"]`)) || input.closest("div")?.querySelector("label");
+  const maxLength = mode === "text" && input.maxLength > 0 ? input.maxLength : Infinity;
+  state.keypad = {input, mode, buffer: String(input.value || ""), fresh: true, upper: false, maxLength};
+  $("keypadTitle").textContent = label ? label.textContent.trim() : "Value";
+  $("keypadCard").classList.toggle("text", mode === "text");
+  const grid = $("keypadGrid"); grid.innerHTML = "";
+  grid.classList.toggle("text", mode === "text");
+  if (mode === "text") renderTextKeys();
+  else renderNumberKeys();
+  renderKeypad();
+  $("keypadModal").hidden = false;
+}
+function keypadButton(key, label, className = "") {
+  const button = document.createElement("button"); button.type = "button"; button.textContent = label;
+  button.className = className; button.onclick = () => keypadPress(key); $("keypadGrid").appendChild(button);
+}
+function renderNumberKeys() {
+  const {min, max, step} = keypadLimits(state.keypad.input);
+  $("keypadRange").textContent = `${Number.isFinite(min) ? min : "—"} to ${Number.isFinite(max) ? max : "—"}`
+    + (step > 1 ? ` · steps of ${step}` : "");
+  const keys = ["7", "8", "9", "4", "5", "6", "1", "2", "3", min < 0 ? "sign" : "", "0", "backspace"];
+  for (const key of keys) {
+    if (!key) { const blank = document.createElement("button"); blank.type = "button"; blank.disabled = true; $("keypadGrid").appendChild(blank); continue; }
+    keypadButton(key, key === "sign" ? "+/-" : key === "backspace" ? "Back" : key, key === "sign" || key === "backspace" ? "wide" : "");
+  }
+}
+function renderTextKeys() {
+  const pad = state.keypad, grid = $("keypadGrid"); grid.innerHTML = "";
+  $("keypadRange").textContent = `${pad.buffer.length} / ${pad.maxLength} characters`;
+  for (const key of "1234567890qwertyuiopasdfghjkl") keypadButton(key, pad.upper ? key.toUpperCase() : key);
+  keypadButton("hyphen", "-", "");
+  keypadButton("shift", "Shift", pad.upper ? "shift-on" : "");
+  for (const key of "zxcvbnm_") keypadButton(key, pad.upper ? key.toUpperCase() : key);
+  keypadButton("backspace", "Back", "wide");
+  keypadButton("space", "Space", "space");
+}
+function keypadPress(key) {
+  const pad = state.keypad; if (!pad) return;
+  if (key === "shift") { pad.upper = !pad.upper; renderTextKeys(); renderKeypad(); return; }
+  if (key === "backspace") pad.buffer = pad.fresh ? "" : pad.buffer.slice(0, -1);
+  else if (key === "sign") pad.buffer = pad.buffer.startsWith("-") ? pad.buffer.slice(1) : "-" + pad.buffer;
+  else {
+    const character = key === "space" ? " " : key === "hyphen" ? "-" : (pad.upper ? key.toUpperCase() : key);
+    const next = (pad.fresh ? "" : pad.buffer) + character;
+    if (next.length <= pad.maxLength) pad.buffer = next;
+  }
+  if (pad.mode === "number") pad.buffer = pad.buffer.replace(/^(-?)0+(?=\d)/, "$1");
+  pad.fresh = false;
+  renderKeypad();
+}
+function renderKeypad() {
+  const pad = state.keypad; if (!pad) return;
+  if (pad.mode === "text") {
+    $("keypadValue").textContent = pad.buffer || "Enter text";
+    $("keypadValue").classList.remove("invalid");
+    $("keypadRange").textContent = `${pad.buffer.length} / ${pad.maxLength} characters`;
+    $("keypadOk").disabled = false;
+    return;
+  }
+  const value = Number(pad.buffer), empty = pad.buffer === "" || pad.buffer === "-";
+  const ok = !empty && keypadValid(value, pad.input);
+  $("keypadValue").textContent = pad.buffer === "" ? "0" : pad.buffer;
+  $("keypadValue").classList.toggle("invalid", !empty && !ok);
+  $("keypadOk").disabled = !ok;
+}
+function closeKeypad() { $("keypadModal").hidden = true; state.keypad = null; }
+function commitKeypad() {
+  const pad = state.keypad; if (!pad) return;
+  if (pad.mode === "number") {
+    const value = Number(pad.buffer);
+    if (!keypadValid(value, pad.input)) return;
+    pad.input.value = value;
+  } else pad.input.value = pad.buffer;
+  pad.input.dispatchEvent(new Event("input", {bubbles: true}));
+  pad.input.dispatchEvent(new Event("change", {bubbles: true}));
+  closeKeypad();
+}
+function bumpInput(input, direction) {
+  const step = Number(input.step) || 1, min = Number(input.min) || 0, max = Number(input.max);
+  const current = Number(input.value), base = Number.isFinite(current) ? current : min;
+  const next = Math.round((base + direction * step) / step) * step;
+  input.value = Math.min(Number.isFinite(max) ? max : next, Math.max(min, next));
+}
+function bumpVolume(direction) { bumpInput($("volume"), direction); renderDispenseTotal(); updateActions(); }
+function numberValue(id) { const value = Number($(id).value); if (!Number.isFinite(value)) throw new Error(`${id} requires a number`); return value; }
+function buildDispenseStep() {
+  const selection = state.dispense;
+  const step = {operation: "peristaltic_dispense", plate_type: selection.plate, pump: "primary", volume_ul: numberValue("volume"), flow_rate: $("flowRate").value, cassette_type: state.cassette,
+    pre_dispense_volume_ul: numberValue("preVolume"), pre_dispense_cycles: numberValue("preCycles"),
+    columns: dispenseColumns(selection), row_sections: is384Plate(selection.plate) ? selection.rowSections : "all",
+    x_offset_steps: axisFromOffset(selection.plate, "x_offset_steps", numberValue("xOffset")),
+    y_offset_steps: axisFromOffset(selection.plate, "y_offset_steps", numberValue("yOffset")),
+    dispense_height_steps: dispenseHeightFromOffset(selection.plate, numberValue("zOffset"))};
+  return step;
+}
+async function runDispense() {
+  try {
+    if (!state.cassette) throw new Error("No cassette is detected");
+    if (!state.dispense.columns.size) throw new Error("Select at least one column");
+    await startRun("dispense", [buildDispenseStep()]);
+  } catch (error) { toast(error.message, true); log(`Dispense rejected: ${error.message}`); }
+}
+async function validateSteps(name, steps) { return api("/v1/protocols/validate", {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({name, steps})}); }
+const CASSETTE_DEAD_ML = {"5ul": 4.2, "1ul": 1.2};
+const MAX_STEP_VOLUME_UL = 3000;
+const RETURN_STEP = {title: "Return reagent", heading: "Return the current reagent to its bottle", operation: "peristaltic_purge", volumes: {"5ul": 1575, "1ul": 450},
+  instruction: "Leave the tubing in the current reagent bottle.",
+};
+const WATER_STEP = {title: "Wash with water", heading: "Flush the lines with water", operation: "peristaltic_prime", volumes: {"5ul": 3000, "1ul": 900},
+  instruction: "Shake off and move tubing to water bottle. Then confirm.",
+  confirm: "Tubing is in the water bottle, no air bubbles on the ends."};
+const PROCEDURES = {
+  load: {
+    label: "Load reagent",
+    ready: {title: "System ready"},
+    steps: [
+      {title: "Push out storage water",heading: "Push out storage water", operation: "peristaltic_prime", volumes: {"5ul": 1575, "1ul": 450},
+       instruction: "The cassette is filled with water. Place the tubing out of the water bottle and shake it off. Then confirm",
+       confirm: "Tubing is outside the water bottle"},
+      {title: "Load reagent", heading: "Prime with reagent", operation: "peristaltic_prime", volumes: {"5ul": 1575, "1ul": 450},
+       instruction: "Move the tubing in the reagent bottle. Then confirm.",
+       confirm: "Tubing in the reagent bottle"},
+    ],
+  },
+  reagent: {
+    label: "Change reagent",
+    ready: {title: "System ready"},
+    steps: [
+      RETURN_STEP,
+      WATER_STEP,
+      {title: "Empty the lines", heading: "Push water out", operation: "peristaltic_prime", volumes: {"5ul": 1610, "1ul": 480},
+       instruction: "Move tubing out of the water and shake it off. Then confirm.",
+       confirm: "The tubing is out of the water bottle"},
+      {title: "Load new reagent", heading: "Load new reagent", operation: "peristaltic_prime", volumes: {"5ul": 1575, "1ul": 450},
+       instruction: "Move tubing into the new reagent bottle. Then confirm.",
+       confirm: "The tubing is in the new reagent bottle, no air bubbles on the ends"},
+    ],
+  },
+  end: {
+    label: "End dispensing",
+    ready: {title: "System left in water"},
+    steps: [RETURN_STEP, WATER_STEP],
+  },
+};
+function procedureVolume(key, index) {
+  if (!state.cassette) return null;
+  const override = state.settings.procedures?.[key]?.[state.cassette];
+  const volumes = Array.isArray(override) ? override : override?.volumes;
+  return volumes?.[index] ?? PROCEDURES[key].steps[index].volumes[state.cassette];
+}
+function procedureSpeed(key, index) {
+  if (!state.cassette) return null;
+  const override = state.settings.procedures?.[key]?.[state.cassette];
+  return (Array.isArray(override) ? null : override?.speeds?.[index]) ?? "medium";
+}
+function procedurePlan(key, index) {
+  const volume = procedureVolume(key, index), speed = procedureSpeed(key, index); if (volume === null || speed === null) return null;
+  return {step: PROCEDURES[key].steps[index], volume, speed, totalMl: volume * 8 / 1000};
+}
+function procedureActionLabel(key, index) { const plan = procedurePlan(key, index); return plan ? `${opLabel(plan.step.operation)} ${plan.volume} uL/well · ${plan.speed} speed` : "—"; }
+function settingsChanged() { return Object.keys(state.settings.procedures || {}).length > 0; }
+function procedureFinished(key) { return state.procedures[key].completed >= PROCEDURES[key].steps.length; }
+function resetProcedures() { for (const key of Object.keys(PROCEDURES)) state.procedures[key] = {index: 0, completed: 0, confirmed: false}; }
+function buildProcedurePanels() {
+  const host = document.querySelector(".work-content");
+  for (const [key, proc] of Object.entries(PROCEDURES)) {
+    const section = document.createElement("section");
+    section.className = "panel"; section.id = `panel-${key}`;
+    section.innerHTML = `<div class="card proc-card">
+      <div class="card-head">
+        <h3>${proc.label}</h3>
+      </div>
+      <ol class="stepper-track" id="${key}Track"></ol>
+      <div class="proc-body" id="${key}Body"></div>
+      <div class="dispense-run">
+        <div class="run-summary"><strong id="${key}Action">—</strong><span id="${key}Progress">Waiting for cassette detection</span></div>
+        <div class="run-buttons">
+          <button class="btn danger abort-button" disabled>Abort</button>
+          <button class="btn primary big" id="${key}Run" disabled>Run step 1</button>
+        </div>
+      </div>
+    </div>`;
+    host.appendChild(section);
+    section.querySelector(".abort-button").onclick = abortActive;
+    $(`${key}Run`).onclick = () => runProcedureStep(key);
+  }
+}
+function renderProcedures() { for (const key of Object.keys(PROCEDURES)) renderProcedure(key); }
+async function refreshSettings(silent = true) {
+  try { const data = await api("/v1/procedure-settings"); state.settings = {procedures: data.procedures || {}}; renderProcedures(); renderAllMethodSettings(); updateActions(); }
+  catch (error) { if (!silent) toast(`Method settings unavailable: ${error.message}`, true); log(`Method settings load failed: ${error.message}`); }
+}
+function autoPrimeRemaining(seconds) {
+  if (seconds <= 0) return "Due now";
+  const totalMinutes = Math.ceil(seconds / 60), hours = Math.floor(totalMinutes / 60), minutes = totalMinutes % 60;
+  if (hours) return `${hours} h ${minutes} min remaining`;
+  return `${minutes} min remaining`;
+}
+function renderAutoPrime() {
+  const data = state.autoPrime, cassette = state.cassette;
+  $("autoPrimeCassette").textContent = cassette ? `${cassetteLabel(cassette)} cassette` : "Waiting for cassette";
+  if (!state.autoPrimeDirty && data?.volumes) state.autoPrimeDraft = {...data.volumes};
+  if (cassette && state.autoPrimeDraft[cassette] !== undefined) $("autoPrimeVolume").value = state.autoPrimeDraft[cassette];
+  if (!data) {
+    $("autoPrimeDue").textContent = "Loading…";
+    $("autoPrimeCountdown").textContent = "Reading schedule";
+    $("autoPrimeNotice").hidden = true;
+    return;
+  }
+  const due = new Date(data.next_due_at);
+  $("autoPrimeDue").textContent = data.status === "running" ? "Running now" : due.toLocaleString([], {weekday:"short", hour:"2-digit", minute:"2-digit"});
+  $("autoPrimeCountdown").textContent = data.status === "running" ? `Slow · ${data.volumes[cassette] ?? "—"} uL/well` : data.status === "waiting" ? (data.waiting_reason || "Waiting for instrument") : autoPrimeRemaining(data.seconds_until_due);
+  $("autoPrimeStatus").textContent = data.last_error ? `Last attempt: ${data.last_error}` : state.autoPrimeDirty ? "Unsaved changes" : "Saved defaults loaded";
+  $("autoPrimeNotice").hidden = !(data.status === "scheduled" && data.seconds_until_due > 0 && data.seconds_until_due <= 60);
+}
+async function refreshAutoPrime(silent = true) {
+  try {
+    const data = await api("/v1/maintenance/auto-prime");
+    state.autoPrime = data; renderAutoPrime(); updateActions();
+    if (data.status === "scheduled" && data.seconds_until_due > 0 && data.seconds_until_due <= 60 && state.autoPrimeWarnedDue !== data.next_due_at) {
+      state.autoPrimeWarnedDue = data.next_due_at;
+      log("Auto prime due in one minute.");
+    }
+  } catch (error) {
+    if (!silent) toast(`Auto prime unavailable: ${error.message}`, true);
+    log(`Auto prime status failed: ${error.message}`);
+  }
+}
+function restoreAutoPrimeSettings() {
+  state.autoPrimeDraft = {...AUTO_PRIME_BUILT_IN_VOLUMES};
+  state.autoPrimeDirty = true; renderAutoPrime(); updateActions();
+}
+async function saveAutoPrimeSettings() {
+  if (!state.cassette) return toast("Wait for the instrument to report a fitted cassette.", true);
+  const value = Number($("autoPrimeVolume").value);
+  if (!Number.isInteger(value) || value < 1 || value > 3000) return toast("Auto-prime volume must be a whole number between 1 and 3000 uL/well.", true);
+  state.autoPrimeDraft[state.cassette] = value;
+  try {
+    const data = await api("/v1/maintenance/auto-prime", {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({volumes: state.autoPrimeDraft})});
+    state.autoPrime = data; state.autoPrimeDraft = {...data.volumes}; state.autoPrimeDirty = false;
+    renderAutoPrime(); updateActions(); toast("Auto-prime defaults saved."); log("Auto-prime volume defaults saved on this instrument.");
+  } catch (error) { toast(error.message, true); log(`Auto-prime settings rejected: ${error.message}`); }
+}
+function geometryFieldId(plate, field) { return `geometry-${plate}-${field}`; }
+function renderPlateGeometry(values = state.geometryDraft || state.plateGeometry, status = null) {
+  state.geometryDraft = cloneGeometry(values);
+  const grid = $("geometryGrid"); grid.innerHTML = "";
+  for (const plate of PLATE_GEOMETRY_ORDER) {
+    const geometry = state.geometryDraft[plate], row = document.createElement("div"); row.className = "geometry-row";
+    row.innerHTML = `<h4>${plateLabel(plate)}</h4>`
+      + editorField("X offset (steps)", `<input id="${geometryFieldId(plate, "x_offset_steps")}" type="number" inputmode="numeric" value="${geometry.x_offset_steps}" min="-60" max="60" />`)
+      + editorField("Y offset (steps)", `<input id="${geometryFieldId(plate, "y_offset_steps")}" type="number" inputmode="numeric" value="${geometry.y_offset_steps}" min="-40" max="40" />`)
+      + editorField("Dispense Z (steps)", `<input id="${geometryFieldId(plate, "dispense_height_steps")}" type="number" inputmode="numeric" value="${geometry.dispense_height_steps}" min="100" max="1100" />`);
+    grid.appendChild(row);
+  }
+  grid.querySelectorAll("input").forEach(input => input.oninput = () => { $("geometryStatus").textContent = "Unsaved changes"; });
+  $("geometryStatus").textContent = status || (state.geometryOverrides.length ? `Custom defaults: ${state.geometryOverrides.map(plateLabel).join(", ")}` : "Using built-in defaults");
+  updateActions();
+}
+function readPlateGeometry() {
+  const plates = {};
+  for (const plate of PLATE_GEOMETRY_ORDER) {
+    plates[plate] = {};
+    for (const [field, minimum, maximum] of [["x_offset_steps", -60, 60], ["y_offset_steps", -40, 40], ["dispense_height_steps", 100, 1100]]) {
+      const value = Number($(geometryFieldId(plate, field)).value);
+      if (!Number.isInteger(value) || value < minimum || value > maximum) throw new Error(`${plateLabel(plate)} ${field.replaceAll("_", " ")} must be between ${minimum} and ${maximum} steps`);
+      plates[plate][field] = value;
+    }
+  }
+  return plates;
+}
+function protocolEffectiveGeometry() {
+  return (state.protocol?.steps || []).map(step => step.type === "peristaltic_dispense" ? {
+    step,
+    x: axisFromOffset(step.selection.plate, "x_offset_steps", step.x_offset_steps),
+    y: axisFromOffset(step.selection.plate, "y_offset_steps", step.y_offset_steps),
+    z: dispenseHeightFromOffset(step.selection.plate, step.z_offset_steps),
+  } : null).filter(Boolean);
+}
+function rebaseProtocolGeometry(preserved) {
+  for (const entry of preserved) {
+    const geometry = geometryForPlate(entry.step.selection.plate);
+    entry.step.x_offset_steps = entry.x - geometry.x_offset_steps;
+    entry.step.y_offset_steps = entry.y - geometry.y_offset_steps;
+    entry.step.z_offset_steps = entry.z - geometry.dispense_height_steps;
+  }
+}
+async function refreshPlateGeometry(silent = true) {
+  try {
+    const preserved = protocolEffectiveGeometry();
+    const data = await api("/v1/plate-geometry");
+    state.plateGeometry = cloneGeometry(data.plates || FALLBACK_PLATE_GEOMETRY);
+    state.builtInPlateGeometry = cloneGeometry(data.built_in || FALLBACK_PLATE_GEOMETRY);
+    state.geometryOverrides = data.overridden_plates || [];
+    rebaseProtocolGeometry(preserved); renderPlateGeometry(state.plateGeometry); renderPlate(); renderProtocol(); renderQuick();
+  } catch (error) { if (!silent) toast(`Plate geometry unavailable: ${error.message}`, true); log(`Plate geometry load failed: ${error.message}`); renderPlateGeometry(state.plateGeometry, "Using built-in fallback defaults"); }
+}
+function restorePlateGeometry() { renderPlateGeometry(state.builtInPlateGeometry, "Built-in values ready to save"); }
+async function savePlateGeometry() {
+  if (state.activeRunId) return toast("Wait for the active run to finish.", true);
+  try {
+    const plates = readPlateGeometry();
+    if (!window.confirm("Save these plate geometry defaults? They will be used for future dispenses that do not provide explicit geometry.")) return;
+    const preserved = protocolEffectiveGeometry();
+    const data = await api("/v1/plate-geometry", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({plates})});
+    state.plateGeometry = cloneGeometry(data.plates); state.builtInPlateGeometry = cloneGeometry(data.built_in); state.geometryOverrides = data.overridden_plates || [];
+    rebaseProtocolGeometry(preserved); renderPlateGeometry(); renderPlate(); renderProtocol(); renderQuick();
+    toast("Plate geometry defaults saved."); log("Plate geometry defaults saved on this instrument.");
+  } catch (error) { toast(error.message, true); log(`Plate geometry save rejected: ${error.message}`); }
+}
+function methodVolumeId(key, index) { return `${key}MethodVolume${index}`; }
+function methodSpeedId(key, index) { return `${key}MethodSpeed${index}`; }
+function renderMethodSettings(key, status = null) {
+  const proc = PROCEDURES[key], view = $(`settings-${key}`), cassette = state.cassette;
+  if (!view) return;
+  if (!cassette) {
+    view.innerHTML = `<div><div class="eyebrow">${proc.label}</div><h3>Step settings</h3></div><div class="step-empty">Waiting for the instrument to report a fitted cassette.</div>`;
+    return;
+  }
+  const flowOptions = value => ["low", "medium", "high"].map(speed => `<option value="${speed}"${speed === value ? " selected" : ""}>${speed[0].toUpperCase() + speed.slice(1)}</option>`).join("");
+  view.innerHTML = `<div><div class="eyebrow">${proc.label}</div><h3>Step settings · ${cassetteLabel(cassette)} cassette</h3></div>`
+    + `<p class="geometry-help">Set the per-well volume and pump speed for each step.</p>`
+    + `<div class="method-settings-grid">${proc.steps.map((step, index) => `<div class="method-settings-row"><h4>${index + 1}. ${step.title}</h4>`
+      + `<div><label for="${methodVolumeId(key, index)}">Volume (uL/well)</label><input id="${methodVolumeId(key, index)}" type="number" inputmode="numeric" value="${procedureVolume(key, index)}" min="1" max="${MAX_STEP_VOLUME_UL}" /></div>`
+      + `<div><label for="${methodSpeedId(key, index)}">Speed</label><select id="${methodSpeedId(key, index)}">${flowOptions(procedureSpeed(key, index))}</select></div></div>`).join("")}</div>`
+    + `<div class="geometry-actions"><span class="geometry-status" id="${key}MethodStatus">${status || "Saved defaults loaded"}</span><div class="right"><button class="btn" type="button" data-method-restore="${key}">Restore built-in values</button><button class="btn primary" type="button" data-method-save="${key}">Save defaults</button></div></div>`;
+  view.querySelectorAll("input, select").forEach(control => control.oninput = () => { $(`${key}MethodStatus`).textContent = "Unsaved changes"; });
+  view.querySelector(`[data-method-restore="${key}"]`).onclick = () => restoreMethodSettings(key);
+  view.querySelector(`[data-method-save="${key}"]`).onclick = () => saveMethodSettings(key);
+}
+function renderAllMethodSettings() { for (const key of Object.keys(PROCEDURES)) renderMethodSettings(key); }
+function restoreMethodSettings(key) {
+  if (!state.cassette) return;
+  PROCEDURES[key].steps.forEach((step, index) => { $(methodVolumeId(key, index)).value = step.volumes[state.cassette]; $(methodSpeedId(key, index)).value = "medium"; });
+  $(`${key}MethodStatus`).textContent = "Built-in values ready to save";
+}
+async function saveMethodSettings(key) {
+  if (!state.cassette) return toast("Wait for the instrument to report a fitted cassette.", true);
+  if (state.activeRunId) return toast("Wait for the active run to finish.", true);
+  const proc = PROCEDURES[key];
+  try {
+    const volumes = proc.steps.map((step, index) => {
+      const value = Number($(methodVolumeId(key, index)).value);
+      if (!Number.isInteger(value) || value < 1 || value > MAX_STEP_VOLUME_UL) throw new Error(`${step.title} must be a whole number between 1 and ${MAX_STEP_VOLUME_UL} uL/well`);
+      return value;
+    });
+    const speeds = proc.steps.map((step, index) => $(methodSpeedId(key, index)).value);
+    if (speeds.some(speed => !["low", "medium", "high"].includes(speed))) throw new Error("Speed must be low, medium, or high");
+    const procedures = JSON.parse(JSON.stringify(state.settings.procedures || {}));
+    const builtIn = volumes.every((value, index) => value === proc.steps[index].volumes[state.cassette]) && speeds.every(speed => speed === "medium");
+    if (builtIn) {
+      if (procedures[key]) { delete procedures[key][state.cassette]; if (!Object.keys(procedures[key]).length) delete procedures[key]; }
+    } else procedures[key] = {...(procedures[key] || {}), [state.cassette]: {volumes, speeds}};
+    const saved = await api("/v1/procedure-settings", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({procedures})});
+    state.settings = {procedures: saved.procedures || {}};
+    renderMethodSettings(key, builtIn ? "Using built-in defaults" : "Custom defaults saved"); renderProcedures(); updateActions();
+    log(`Method settings saved: ${proc.label}, ${cassetteLabel(state.cassette)} cassette`); toast("Method defaults saved on this instrument.");
+  } catch (error) { toast(error.message, true); log(`Method settings save rejected: ${error.message}`); }
+}
+function renderProcedure(key) {
+  const proc = PROCEDURES[key], progress = state.procedures[key], spec = Boolean(state.cassette), locked = Boolean(state.activeRunId);
+  const track = $(`${key}Track`), body = $(`${key}Body`);
+  track.innerHTML = "";
+  proc.steps.forEach((step, index) => {
+    const done = index < progress.completed, active = !procedureFinished(key) && index === progress.index;
+    const button = document.createElement("button"); button.type = "button";
+    button.className = `track-step${done ? " done" : ""}${active ? " active" : ""}`;
+    button.disabled = !spec || locked || index > progress.completed;
+    button.innerHTML = `<span class="num">${done ? "✓" : index + 1}</span><span class="track-title">${step.title}</span>`;
+    button.onclick = () => { progress.index = index; progress.confirmed = false; renderProcedure(key); updateActions(); };
+    track.appendChild(button);
+  });
+  if (!spec) { body.innerHTML = `<div class="step-empty">Waiting for the instrument to report a fitted cassette.</div>`; return; }
+  if (procedureFinished(key)) {
+    body.innerHTML = `<div class="proc-ready"><strong>${proc.ready.title}</strong><button class="btn" id="${key}Restart">Start over</button></div>`;
+    $(`${key}Restart`).onclick = () => { state.procedures[key] = {index: 0, completed: 0, confirmed: false}; renderProcedure(key); updateActions(); };
+    return;
+  }
+  const plan = procedurePlan(key, progress.index), step = plan.step;
+  body.innerHTML = `<div><div class="eyebrow">Step ${progress.index + 1} of ${proc.steps.length}</div><h3>${step.heading}</h3></div>`
+    + `<div class="proc-instruction">${step.instruction}</div>`
+    + (step.confirm ? `<button type="button" class="confirm-toggle${progress.confirmed ? " on" : ""}" id="${key}Confirm" aria-pressed="${progress.confirmed}"><span class="box">${progress.confirmed ? "✓" : ""}</span><span>${step.confirm}</span></button>` : "");
+  const confirmButton = $(`${key}Confirm`);
+  if (confirmButton) { confirmButton.disabled = locked; confirmButton.onclick = () => { progress.confirmed = !progress.confirmed; renderProcedure(key); updateActions(); }; }
+}
+async function runProcedureStep(key) {
+  try {
+    const progress = state.procedures[key], plan = procedurePlan(key, progress.index);
+    if (!plan) throw new Error("No cassette is detected");
+    if (plan.step.confirm && !progress.confirmed) throw new Error("Confirm the tubing position first");
+    await startRun(key, [{operation: plan.step.operation, plate_type: "96_well", pump: "primary", volume_ul: plan.volume, flow_rate: plan.speed, cassette_type: state.cassette}]);
+  } catch (error) { toast(error.message, true); log(`${PROCEDURES[key].label} step rejected: ${error.message}`); }
+}
+const STEP_TYPES = {
+  peristaltic_dispense: {label: "Dispense", driver: true},
+  peristaltic_prime: {label: "Prime", driver: true},
+  peristaltic_purge: {label: "Purge", driver: true},
+  shake: {label: "Shake", driver: true},
+  soak: {label: "Soak", driver: true},
+  // Wait and repeat are sequenced by the dashboard, not the instrument. The
+  // operator sees them as ordinary steps.
+  wait: {label: "Wait", driver: false},
+  repeat: {label: "Repeat", driver: false},
+};
+const MAX_EXPANDED_STEPS = 400;
+function resetProtocolDraft() { state.protocol = {id: null, name: "", steps: [], selected: -1, dirty: false}; }
+function defaultVolume() { return state.cassette === "5ul" ? 50 : 10; }
+function newProtocolStep(type) {
+  const volume = defaultVolume();
+  if (type === "peristaltic_dispense") return {name: "", type, selection: newSelection(), volume_ul: volume, flow_rate: "medium", pre_dispense_volume_ul: volume, pre_dispense_cycles: 2, x_offset_steps: 0, y_offset_steps: 0, z_offset_steps: 0};
+  if (type === "peristaltic_prime" || type === "peristaltic_purge") return {name: "", type, volume_ul: 500, flow_rate: "medium"};
+  if (type === "shake" || type === "soak") return {name: "", type, duration_seconds: 30, plate_type: "96_well", move_carrier_home: type === "soak" ? false : true};
+  if (type === "wait") return {name: "", type, mode: "timed", seconds: 60, message: ""};
+  return {name: "", type, count: 2};
+}
+function stepTitle(step) { return step.name.trim() || STEP_TYPES[step.type].label; }
+function stepMeta(step) {
+  if (step.type === "peristaltic_dispense") return `${plateShortLabel(step.selection.plate)} · ${step.volume_ul} uL/well · ${selectionText(step.selection)}`;
+  if (step.type === "peristaltic_prime" || step.type === "peristaltic_purge") return `${STEP_TYPES[step.type].label} ${step.volume_ul} uL/well · ${step.flow_rate}`;
+  if (step.type === "shake" || step.type === "soak") return `${step.duration_seconds} s · ${step.move_carrier_home ? "move carrier home" : "keep carrier"}`;
+  if (step.type === "wait") return step.mode === "timed" ? `Hold ${step.seconds} s` : "Hold until confirmed";
+  return `Run the block above ${step.count} × in total`;
+}
+function protocolPlateType(steps) {
+  const plates = new Set();
+  for (const step of steps) {
+    if (step.type === "peristaltic_dispense") plates.add(step.selection.plate);
+    else if (step.type === "shake" || step.type === "soak") plates.add(step.plate_type);
+  }
+  if (plates.size > 1) throw new Error(`A protocol must use one plate type; found ${Array.from(plates).map(plateShortLabel).join(" and ")}`);
+  return plates.values().next().value || "96_well";
+}
+function serializeProtocolSteps(steps) {
+  const plate = protocolPlateType(steps);
+  return steps.map(step => serializeStep(step, plate));
+}
+function serializeStep(step, protocolPlate = null) {
+  const base = {name: step.name.trim(), type: step.type};
+  if (step.type === "peristaltic_dispense") {
+    const selection = step.selection;
+    const body = {operation: step.type, plate_type: selection.plate, pump: "primary", volume_ul: step.volume_ul, flow_rate: step.flow_rate, cassette_type: "any",
+      pre_dispense_volume_ul: step.pre_dispense_volume_ul, pre_dispense_cycles: step.pre_dispense_cycles,
+      columns: dispenseColumns(selection), row_sections: is384Plate(selection.plate) ? selection.rowSections : "all",
+      x_offset_steps: axisFromOffset(selection.plate, "x_offset_steps", step.x_offset_steps),
+      y_offset_steps: axisFromOffset(selection.plate, "y_offset_steps", step.y_offset_steps),
+      dispense_height_steps: dispenseHeightFromOffset(selection.plate, step.z_offset_steps)};
+    return {...base, step: body};
+  }
+  if (step.type === "peristaltic_prime" || step.type === "peristaltic_purge") {
+    return {...base, step: {operation: step.type, plate_type: protocolPlate || "96_well", pump: "primary", volume_ul: step.volume_ul, flow_rate: step.flow_rate, cassette_type: "any"}};
+  }
+  if (step.type === "shake") return {...base, step: {operation: "shake", plate_type: step.plate_type, duration_seconds: step.duration_seconds, move_carrier_home: step.move_carrier_home, axis: "x", speed: "medium"}};
+  if (step.type === "soak") return {...base, step: {operation: "soak", plate_type: step.plate_type, duration_seconds: step.duration_seconds, move_carrier_home: step.move_carrier_home}};
+  if (step.type === "wait") return {...base, wait: step.mode === "timed" ? {mode: "timed", seconds: step.seconds, message: step.message.trim()} : {mode: "confirm", message: step.message.trim()}};
+  return {...base, repeat: {count: step.count}};
+}
+function hydrateStep(saved) {
+  const name = saved.name || "";
+  if (saved.type === "wait") return {name, type: "wait", mode: saved.wait.mode, seconds: saved.wait.seconds ?? 60, message: saved.wait.message || ""};
+  if (saved.type === "repeat") return {name, type: "repeat", count: saved.repeat.count};
+  const body = saved.step;
+  if (saved.type === "peristaltic_dispense") {
+    const selection = newSelection(body.plate_type);
+    if (body.columns !== "all") selection.columns = new Set(body.columns);
+    selection.rowSections = body.row_sections || "all";
+    return {name, type: saved.type, selection, volume_ul: body.volume_ul, flow_rate: body.flow_rate, pre_dispense_volume_ul: body.pre_dispense_volume_ul, pre_dispense_cycles: body.pre_dispense_cycles, x_offset_steps: axisOffsetFromValue(body.plate_type, "x_offset_steps", body.x_offset_steps), y_offset_steps: axisOffsetFromValue(body.plate_type, "y_offset_steps", body.y_offset_steps), z_offset_steps: zOffsetFromHeight(body.plate_type, body.dispense_height_steps)};
+  }
+  if (saved.type === "shake" || saved.type === "soak") return {name, type: saved.type, duration_seconds: body.duration_seconds, plate_type: body.plate_type, move_carrier_home: body.move_carrier_home};
+  return {name, type: saved.type, volume_ul: body.volume_ul, flow_rate: body.flow_rate};
+}
+function expandProtocol(steps) {
+  const expanded = []; let blockStart = 0;
+  steps.forEach((step, index) => {
+    if (step.type === "repeat") {
+      const block = expanded.slice(blockStart);
+      if (!block.length) return;
+      const total = Math.max(2, Number(step.count) || 2);
+      block.forEach(entry => { entry.cycles = total; });
+      for (let cycle = 2; cycle <= total; cycle++) for (const entry of block) expanded.push({...entry, cycle});
+      blockStart = expanded.length;
+      return;
+    }
+    expanded.push({index, step, cycle: 1, cycles: 1});
+  });
+  return expanded;
+}
+function protocolBusy() { return Boolean(state.protocolRun) || (Boolean(state.activeRunId) && state.activeKind === "protocol"); }
+function markProtocolDirty() { state.protocol.dirty = true; renderProtocol(); updateActions(); }
+function renderProtocol() {
+  const protocol = state.protocol, locked = protocolBusy();
+  if ($("protocolName").value !== protocol.name) $("protocolName").value = protocol.name;
+  $("protocolName").disabled = locked;
+  const pick = $("protocolPick");
+  pick.innerHTML = `<option value="">${state.library.length ? "Select a saved protocol…" : "No saved protocols yet"}</option>`
+    + state.library.map(entry => `<option value="${entry.id}">${entry.name}</option>`).join("");
+  pick.value = protocol.id || ""; pick.disabled = locked || !state.library.length;
+  const expanded = expandProtocol(protocol.steps);
+  $("protocolSummary").textContent = protocol.steps.length
+    ? `${protocol.steps.length} step${protocol.steps.length === 1 ? "" : "s"} · ${expanded.length} to run${protocol.dirty ? " · unsaved" : ""}`
+    : "No steps yet";
+  const list = $("protocolStepList"); list.innerHTML = "";
+  if (!protocol.steps.length) list.innerHTML = `<div class="step-empty">Add the first step from the buttons below.</div>`;
+  protocol.steps.forEach((step, index) => {
+    const row = document.createElement("div");
+    const running = state.protocolRun && state.protocolRun.expanded[state.protocolRun.index]?.index === index;
+    row.className = `pstep${index === protocol.selected ? " active" : ""}${running ? " running" : ""}`;
+    row.innerHTML = `<span class="num">${index + 1}</span><span><span class="pstep-title">${stepTitle(step)}</span><span class="pstep-meta">${stepMeta(step)}</span></span>`;
+    row.onclick = () => { if (locked) return; protocol.selected = index; renderProtocol(); updateActions(); };
+    const tools = document.createElement("span"); tools.className = "pstep-tools";
+    for (const [glyph, label, action] of [["↑", "Move up", -1], ["↓", "Move down", 1], ["×", "Remove", 0]]) {
+      const button = document.createElement("button"); button.type = "button"; button.textContent = glyph; button.title = label;
+      button.disabled = locked || (action === -1 && index === 0) || (action === 1 && index === protocol.steps.length - 1);
+      button.onclick = event => {
+        event.stopPropagation();
+        if (action === 0) { protocol.steps.splice(index, 1); protocol.selected = Math.min(protocol.selected, protocol.steps.length - 1); }
+        else { const target = index + action; [protocol.steps[index], protocol.steps[target]] = [protocol.steps[target], protocol.steps[index]]; protocol.selected = target; }
+        markProtocolDirty();
+      };
+      tools.appendChild(button);
+    }
+    row.appendChild(tools); list.appendChild(row);
+    if (index === protocol.selected || running) scrollIntoView(row, "nearest");
+  });
+  const palette = $("protocolPalette"); palette.innerHTML = "";
+  for (const [type, meta] of Object.entries(STEP_TYPES)) {
+    const button = document.createElement("button"); button.type = "button"; button.textContent = `+ ${meta.label}`;
+    button.disabled = locked || protocol.steps.length >= 50;
+    button.onclick = () => { protocol.steps.push(newProtocolStep(type)); protocol.selected = protocol.steps.length - 1; markProtocolDirty(); };
+    palette.appendChild(button);
+  }
+  renderStepEditor();
+}
+function scrollIntoView(element, block) { try { element?.scrollIntoView({block, behavior: "smooth"}); } catch (_) { /* not every engine implements it */ } }
+function editorField(label, control) { return `<div><label>${label}</label>${control}</div>`; }
+function stepperControl(id, value, min, max, stepSize) {
+  return `<div class="stepper small"><button type="button" data-bump="-1" aria-label="Decrease">−</button>`
+    + `<input id="${id}" type="number" inputmode="numeric" value="${value}" min="${min}" max="${max}" step="${stepSize}" />`
+    + `<button type="button" data-bump="1" aria-label="Increase">+</button></div>`;
+}
+function stepEditorMarkup(step, prefix, withName) {
+  const bounds = volumeBounds();
+  const flowOptions = ["low", "medium", "high"].map(rate => `<option value="${rate}"${rate === step.flow_rate ? " selected" : ""}>${rate[0].toUpperCase() + rate.slice(1)}</option>`).join("");
+  const nameField = withName ? editorField("Step name", `<input id="${prefix}Name" data-keypad="text" maxlength="60" value="${step.name.replaceAll('"', "&quot;")}" placeholder="${STEP_TYPES[step.type].label}" />`) : "";
+  let basic = "", advanced = "";
+  if (step.type === "peristaltic_dispense") {
+    const geometry = geometryForPlate(step.selection.plate);
+    const volumeField = editorField("Volume (uL/well)", stepperControl(`${prefix}Volume`, step.volume_ul, bounds.min, bounds.max, bounds.step));
+    basic = (withName ? `<div class="protocol-dispense-head">${nameField}${volumeField}</div>` : `<div class="field-row"><div><label>Plate</label><div class="segmented" id="${prefix}Plate"></div></div>${volumeField}</div>`)
+      + (withName ? `<div class="protocol-dispense-plate"><label>Plate</label><div class="segmented" id="${prefix}Plate"></div></div>` : "")
+      + `<div><div class="map-head"><div class="help" id="${prefix}SelectionText"></div></div><div class="plate"><div class="plate-map" id="${prefix}PlateMap"></div></div></div>`;
+    advanced = `<div class="advanced-grid">`
+      + editorField("Flow rate", `<select id="${prefix}Flow">${flowOptions}</select>`)
+      + editorField("Pre-dispense (uL/well)", `<input id="${prefix}PreVolume" type="number" inputmode="numeric" value="${step.pre_dispense_volume_ul}" min="0" max="${bounds.max}" step="${bounds.step}" />`)
+      + editorField("Cycles", `<input id="${prefix}PreCycles" type="number" inputmode="numeric" value="${step.pre_dispense_cycles}" min="0" max="255" />`)
+      + editorField("X offset (steps)", `<input id="${prefix}XOffset" type="number" inputmode="numeric" value="${step.x_offset_steps}" min="${-60 - geometry.x_offset_steps}" max="${60 - geometry.x_offset_steps}" />`)
+      + editorField("Y offset (steps)", `<input id="${prefix}YOffset" type="number" inputmode="numeric" value="${step.y_offset_steps}" min="${-40 - geometry.y_offset_steps}" max="${40 - geometry.y_offset_steps}" />`)
+      + editorField("Z offset (steps)", `<input id="${prefix}ZOffset" type="number" inputmode="numeric" value="${step.z_offset_steps}" min="${100 - geometry.dispense_height_steps}" max="${1100 - geometry.dispense_height_steps}" />`)
+      + `</div>`;
+  } else if (step.type === "peristaltic_prime" || step.type === "peristaltic_purge") {
+    basic = `<div class="field-row">${editorField("Volume (uL/well)", stepperControl(`${prefix}Volume`, step.volume_ul, 1, 3000, 50))}</div>`
+      ;
+    advanced = `<div class="advanced-grid">${editorField("Flow rate", `<select id="${prefix}Flow">${flowOptions}</select>`)}</div>`;
+  } else if (step.type === "shake" || step.type === "soak") {
+    basic = `<div class="field-row">${editorField("Duration (seconds)", stepperControl(`${prefix}Duration`, step.duration_seconds, 1, 600, 5))}</div>`;
+    advanced = `<div class="advanced-grid">`
+      + editorField("Plate", `<select id="${prefix}Plate2">${PLATE_GEOMETRY_ORDER.map(plate => `<option value="${plate}"${plate === step.plate_type ? " selected" : ""}>${plateShortLabel(plate)}</option>`).join("")}</select>`)
+      + editorField("Carrier", `<select id="${prefix}MoveHome"><option value="true"${step.move_carrier_home ? " selected" : ""}>Move carrier home first</option><option value="false"${step.move_carrier_home ? "" : " selected"}>Keep current position</option></select>`)
+      + `</div>`;
+  } else if (step.type === "wait") {
+    basic = `<div class="field-row"><div><label>Hold until</label><div class="segmented" id="${prefix}WaitMode">`
+      + `<button type="button" data-mode="timed"${step.mode === "timed" ? ' class="active"' : ""}>A set time</button>`
+      + `<button type="button" data-mode="confirm"${step.mode === "confirm" ? ' class="active"' : ""}>I confirm</button></div></div>`
+      + (step.mode === "timed" ? editorField("Seconds", stepperControl(`${prefix}Seconds`, step.seconds, 1, 86400, 5)) : "") + `</div>`;
+    advanced = `<div class="advanced-grid">${editorField("Message on screen", `<input id="${prefix}Message" data-keypad="text" maxlength="120" value="${step.message.replaceAll('"', "&quot;")}" placeholder="Shown while the protocol waits" />`)}</div>`;
+  } else {
+    basic = `<div class="field-row">${editorField("Run the block this many times in total", stepperControl(`${prefix}Count`, step.count, 2, 99, 1))}</div>`;
+  }
+  return (withName && step.type !== "peristaltic_dispense" ? `<div class="field-row">${nameField}</div>` : "")
+    + basic
+    + (advanced ? `<details class="advanced"><summary>Advanced settings</summary><div class="advanced-body">${advanced}</div></details>` : "");
+}
+function wireStepEditor(step, prefix, container, locked, rerender, notify) {
+  const onChange = notify;
+  const disclosure = container.querySelector("details.advanced");
+  if (disclosure) disclosure.ontoggle = () => { if (disclosure.open) scrollIntoView(disclosure, "end"); };
+  container.querySelectorAll("input, select").forEach(field => { field.disabled = locked; });
+  container.querySelectorAll(".stepper button, .segmented button").forEach(button => { button.disabled = locked; });
+  const bindNumber = (id, key) => { const field = $(id); if (field) field.oninput = () => { const value = Number(field.value); if (Number.isFinite(value)) { step[key] = value; onChange(); } }; };
+  container.querySelectorAll(".stepper").forEach(stepper => {
+    const input = stepper.querySelector("input");
+    stepper.querySelectorAll("[data-bump]").forEach(button => button.onclick = () => { bumpInput(input, Number(button.dataset.bump)); input.dispatchEvent(new Event("input")); });
+  });
+  if ($(`${prefix}Name`)) $(`${prefix}Name`).oninput = () => { step.name = $(`${prefix}Name`).value; onChange(); };
+  bindNumber(`${prefix}Volume`, "volume_ul"); bindNumber(`${prefix}Duration`, "duration_seconds"); bindNumber(`${prefix}Seconds`, "seconds"); bindNumber(`${prefix}Count`, "count");
+  bindNumber(`${prefix}PreVolume`, "pre_dispense_volume_ul"); bindNumber(`${prefix}PreCycles`, "pre_dispense_cycles");
+  bindNumber(`${prefix}XOffset`, "x_offset_steps"); bindNumber(`${prefix}YOffset`, "y_offset_steps");
+  bindNumber(`${prefix}ZOffset`, "z_offset_steps");
+  if ($(`${prefix}Flow`)) $(`${prefix}Flow`).onchange = () => { step.flow_rate = $(`${prefix}Flow`).value; onChange(); };
+  if ($(`${prefix}Plate2`)) $(`${prefix}Plate2`).onchange = () => { step.plate_type = $(`${prefix}Plate2`).value; onChange(); };
+  if ($(`${prefix}MoveHome`)) $(`${prefix}MoveHome`).onchange = () => { step.move_carrier_home = $(`${prefix}MoveHome`).value === "true"; onChange(); };
+  if ($(`${prefix}Message`)) $(`${prefix}Message`).oninput = () => { step.message = $(`${prefix}Message`).value; onChange(); };
+  container.querySelectorAll(`#${prefix}WaitMode button`).forEach(button => button.onclick = () => { if (locked) return; step.mode = button.dataset.mode; rerender(); onChange(); });
+  if (step.type === "peristaltic_dispense") {
+    const redraw = () => { renderPlateMap($(`${prefix}PlateMap`), step.selection, locked, redraw, true); $(`${prefix}SelectionText`).textContent = selectionText(step.selection); onChange(); };
+    renderPlateChoice($(`${prefix}Plate`), step.selection, locked, () => { rerender(); onChange(); });
+    redraw();
+  }
+}
+function renderStepEditor() {
+  const protocol = state.protocol, editor = $("protocolEditor"), locked = protocolBusy();
+  const step = protocol.steps[protocol.selected];
+  if (!step) { editor.innerHTML = `<div class="editor-empty">Select a step to edit it, or add one from the palette.</div>`; return; }
+  editor.innerHTML = stepEditorMarkup(step, "ps", true);
+  const touch = () => {
+    state.protocol.dirty = true;
+    const row = $("protocolStepList").children[protocol.selected];
+    if (row && row.classList.contains("pstep")) { row.querySelector(".pstep-title").textContent = stepTitle(step); row.querySelector(".pstep-meta").textContent = stepMeta(step); }
+    $("protocolSummary").textContent = `${protocol.steps.length} step${protocol.steps.length === 1 ? "" : "s"} · ${expandProtocol(protocol.steps).length} to run · unsaved`;
+    updateActions();
+  };
+  wireStepEditor(step, "ps", editor, locked, renderStepEditor, touch);
+}
+const QUICK_TYPES = ["peristaltic_dispense", "peristaltic_prime", "peristaltic_purge", "shake"];
+function resetQuickDraft() {
+  state.quick = {type: QUICK_TYPES[0], steps: {}};
+  for (const type of QUICK_TYPES) state.quick.steps[type] = newProtocolStep(type);
+}
+function quickStep() { return state.quick.steps[state.quick.type]; }
+function renderQuick() {
+  const locked = Boolean(state.activeRunId), choice = $("quickChoice");
+  choice.innerHTML = "";
+  for (const type of QUICK_TYPES) {
+    const button = document.createElement("button"); button.type = "button"; button.textContent = STEP_TYPES[type].label;
+    button.className = type === state.quick.type ? "active" : ""; button.disabled = locked || !state.cassette;
+    button.onclick = () => { state.quick.type = type; renderQuick(); updateActions(); };
+    choice.appendChild(button);
+  }
+  renderQuickEditor();
+  updateQuickSummary();
+}
+function renderQuickEditor() {
+  const editor = $("quickEditor"), locked = Boolean(state.activeRunId) || !state.cassette;
+  const step = quickStep();
+  editor.innerHTML = stepEditorMarkup(step, "qs", false);
+  wireStepEditor(step, "qs", editor, locked, renderQuickEditor, updateQuickSummary);
+}
+function updateQuickSummary() {
+  const step = quickStep();
+  if (!state.cassette) { $("quickAction").textContent = "Waiting for cassette detection"; return; }
+  if (step.type === "peristaltic_dispense") {
+    const wells = step.selection.columns.size * selectionRowCount(step.selection);
+    const total = (step.volume_ul * wells + step.pre_dispense_volume_ul * step.pre_dispense_cycles * 8) / 1000;
+    $("quickAction").textContent = `${plateShortLabel(step.selection.plate)} · ${step.volume_ul} uL/well × ${wells} wells · ${total.toFixed(2)} mL total`;
+  } else if (step.type === "shake") {
+    $("quickAction").textContent = `Shake ${step.duration_seconds} s · ${step.move_carrier_home ? "move carrier home" : "keep carrier"}`;
+  } else {
+    $("quickAction").textContent = `${STEP_TYPES[step.type].label} ${step.volume_ul} uL/well · ${(step.volume_ul * 8 / 1000).toFixed(2)} mL total`;
+  }
+}
+async function runQuick() {
+  try {
+    if (!state.cassette) throw new Error("No cassette is detected");
+    const step = quickStep();
+    if (step.type === "peristaltic_dispense" && !step.selection.columns.size) throw new Error("Select at least one column");
+    await startRun("quick", [runtimeDriverStep(step)]);
+  } catch (error) { toast(error.message, true); log(`Quick rejected: ${error.message}`); }
+}
+async function refreshLibrary(silent = true) {
+  try { const data = await api("/v1/protocols"); state.library = data.protocols || []; renderProtocol(); updateActions(); }
+  catch (error) { if (!silent) toast(`Protocol library unavailable: ${error.message}`, true); log(`Protocol library load failed: ${error.message}`); }
+}
+function loadProtocol(id) {
+  const entry = state.library.find(item => item.id === id);
+  if (!entry) { resetProtocolDraft(); renderProtocol(); updateActions(); return; }
+  state.protocol = {id: entry.id, name: entry.name, steps: entry.steps.map(hydrateStep), selected: entry.steps.length ? 0 : -1, dirty: false};
+  renderProtocol(); updateActions();
+}
+async function saveProtocol() {
+  const protocol = state.protocol;
+  const name = protocol.name.trim();
+  if (!name) return toast("Give the protocol a name first.", true);
+  if (!protocol.steps.length) return toast("Add at least one step first.", true);
+  try {
+    protocolPlateType(protocol.steps);
+    const steps = serializeProtocolSteps(protocol.steps);
+    const saved = await api("/v1/protocols", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({id: protocol.id || undefined, name, steps})});
+    protocol.id = saved.id; protocol.name = saved.name; protocol.dirty = false;
+    await refreshLibrary(); renderProtocol(); updateActions();
+    toast(`Saved "${saved.name}" on the instrument.`); log(`Protocol saved: ${saved.name} (${saved.steps.length} steps)`);
+  } catch (error) { toast(error.message, true); log(`Protocol save rejected: ${error.message}`); }
+}
+async function deleteProtocol() {
+  const protocol = state.protocol;
+  if (!protocol.id) return toast("This protocol has not been saved yet.", true);
+  if (!window.confirm(`Delete "${protocol.name}" from this instrument? Saved protocols cannot be recovered.`)) return;
+  try {
+    await api(`/v1/protocols/${protocol.id}`, {method: "DELETE"});
+    log(`Protocol deleted: ${protocol.name}`); toast("Protocol deleted.");
+    resetProtocolDraft(); await refreshLibrary(); renderProtocol(); updateActions();
+  } catch (error) { toast(error.message, true); }
+}
+function cancelWait() { const resolver = state.waitResolver; state.waitResolver = null; if (resolver) resolver("cancelled"); }
+function awaitRun() { return new Promise(resolve => { state.runResolver = resolve; }); }
+function protocolWait(step) {
+  return new Promise(resolve => {
+    state.waitResolver = resolve;
+    if (step.mode === "confirm") { $("protocolContinue").hidden = false; return; }
+    const until = Date.now() + step.seconds * 1000;
+    const tick = () => {
+      if (state.waitResolver !== resolve) return;
+      const left = Math.max(0, Math.ceil((until - Date.now()) / 1000));
+      $("protocolProgress").textContent = `${step.message || "Waiting"} · ${left} s remaining`;
+      if (left) { state.waitTimer = setTimeout(tick, 250); return; }
+      state.waitResolver = null; resolve("done");
+    };
+    tick();
+  });
+}
+async function runProtocol() {
+  const protocol = state.protocol;
+  if (!state.cassette) return toast("No cassette is detected.", true);
+  const expanded = expandProtocol(protocol.steps);
+  if (!expanded.length) return toast("Add at least one step first.", true);
+  if (expanded.length > MAX_EXPANDED_STEPS) return toast(`This protocol expands to ${expanded.length} steps; the limit is ${MAX_EXPANDED_STEPS}.`, true);
+  let plate;
+  try { plate = protocolPlateType(protocol.steps); }
+  catch (error) { toast(error.message, true); log(`Protocol rejected: ${error.message}`); return; }
+  state.protocolRun = {expanded, index: 0, cancelled: false};
+  log(`Protocol "${protocol.name || "unsaved"}" started: ${expanded.length} steps`);
+  renderProtocol(); updateActions();
+  for (let position = 0; position < expanded.length; position++) {
+    if (state.protocolRun.cancelled) break;
+    state.protocolRun.index = position;
+    const entry = expanded[position];
+    renderProtocol(); updateActions();
+    if (entry.step.type === "wait") {
+      $("protocolProgress").textContent = entry.step.mode === "confirm" ? (entry.step.message || "Waiting for Continue") : (entry.step.message || "Waiting");
+      const outcome = await protocolWait(entry.step);
+      $("protocolContinue").hidden = true;
+      if (outcome === "cancelled") break;
+      continue;
+    }
+    try {
+      const driverStep = runtimeDriverStep(entry.step, plate);
+      await startRun("protocol", [driverStep]);
+    } catch (error) {
+      toast(error.message, true); log(`Protocol step ${entry.index + 1} rejected: ${error.message}`);
+      break;
+    }
+    const run = await awaitRun();
+    if (!run || run.state !== "completed") { log(`Protocol stopped at step ${entry.index + 1}: ${run ? run.state : "unknown"}`); break; }
+  }
+  const cancelled = state.protocolRun.cancelled;
+  state.protocolRun = null; $("protocolContinue").hidden = true;
+  log(cancelled ? "Protocol aborted." : "Protocol finished.");
+  if (!cancelled) toast("Protocol finished.");
+  renderProtocol(); updateActions();
+}
+function runtimeDriverStep(step, plate) {
+  const body = serializeStep(step, plate).step;
+  // Only pump operations have a cassette field; Shake and Soak forbid it.
+  return Object.hasOwn(body, "cassette_type") ? {...body, cassette_type: state.cassette} : body;
+}
+function updateActions() {
+  const manualRunActive = Boolean(state.activeRunId), autoPrimeRunning = state.autoPrime?.status === "running";
+  const inactive = manualRunActive || autoPrimeRunning, cassetteKnown = Boolean(state.cassette), ready = state.deviceReady && cassetteKnown;
+  $("runDispense").disabled = inactive || !ready || !state.dispense.columns.size;
+  $("selectAllColumns").disabled = inactive || !cassetteKnown; $("clearColumns").disabled = inactive || !cassetteKnown;
+  $("volumeUp").disabled = inactive || !cassetteKnown; $("volumeDown").disabled = inactive || !cassetteKnown; $("volume").disabled = inactive || !cassetteKnown;
+  
+  if (!inactive && !state.activeKind) $("dispenseProgress").textContent = !cassetteKnown ? "Waiting for cassette detection" : !state.deviceReady ? "Instrument not ready" : !state.dispense.columns.size ? "Select at least one column" : "Ready";
+  for (const key of Object.keys(PROCEDURES)) {
+    const proc = PROCEDURES[key], progress = state.procedures[key], finished = procedureFinished(key);
+    const plan = finished ? null : procedurePlan(key, progress.index), needsConfirm = Boolean(plan?.step.confirm) && !progress.confirmed;
+    $(`${key}Run`).disabled = inactive || !ready || finished || needsConfirm;
+    $(`${key}Run`).textContent = finished ? "Procedure complete" : `Run step ${progress.index + 1}`;
+    $(`${key}Action`).textContent = !cassetteKnown ? "Waiting for cassette detection" : finished ? proc.ready.title : procedureActionLabel(key, progress.index);
+    if (!inactive && state.activeKind !== key) $(`${key}Progress`).textContent = !cassetteKnown ? "Connect the instrument to start" : finished ? `All ${proc.steps.length} steps completed` : !state.deviceReady ? "Instrument not ready" : needsConfirm ? "Confirm the tubing position to continue" : "Ready";
+  }
+  $("replaceCassette").disabled = inactive || !cassetteKnown || !state.usage?.[state.cassette];
+  const running = protocolBusy(), expanded = expandProtocol(state.protocol.steps);
+  let plateError = ""; try { protocolPlateType(state.protocol.steps); } catch (error) { plateError = error.message; }
+  $("protocolRun").disabled = running || inactive || !ready || !expanded.length || Boolean(plateError);
+  $("protocolSave").disabled = running;
+  $("protocolDelete").disabled = running;
+  $("protocolNew").disabled = running;
+  $("protocolAction").textContent = state.protocol.name.trim() || "Unsaved protocol";
+  if (!running && state.activeKind !== "protocol") $("protocolProgress").textContent = plateError || (!cassetteKnown ? "Waiting for cassette detection" : !state.deviceReady ? "Instrument not ready" : !expanded.length ? "Add at least one step" : `${expanded.length} steps ready`);
+  const quickStepNow = quickStep();
+  $("quickRun").disabled = inactive || !ready || (quickStepNow.type === "peristaltic_dispense" && !quickStepNow.selection.columns.size);
+  $("quickRun").textContent = `Run ${STEP_TYPES[quickStepNow.type].label.toLowerCase()}`;
+  if (!inactive && state.activeKind !== "quick") $("quickProgress").textContent = !cassetteKnown ? "Waiting for cassette detection" : !state.deviceReady ? "Instrument not ready" : "Ready";
+  $("geometrySave").disabled = inactive;
+  $("geometryRestore").disabled = inactive;
+  $("geometryGrid").querySelectorAll("input").forEach(input => { input.disabled = inactive; });
+  qsa(".method-settings-grid input, .method-settings-grid select").forEach(control => { control.disabled = inactive || !cassetteKnown; });
+  qsa("[data-method-save], [data-method-restore]").forEach(button => { button.disabled = inactive || !cassetteKnown; });
+  $("autoPrimeVolume").disabled = inactive || !cassetteKnown; $("autoPrimeSave").disabled = inactive || !cassetteKnown; $("autoPrimeRestore").disabled = inactive || !cassetteKnown;
+  qsa(".abort-button").forEach(b => b.disabled = !manualRunActive && !running);
+}
+async function startRun(kind, steps) {
+  if (!state.cassette) throw new Error("No cassette is detected"); if (state.activeRunId) throw new Error("Another run is already active");
+  await validateSteps(`${kind} validation`, steps);
+  const requestId = `demo-${kind}-${globalThis.crypto?.randomUUID?.() || Date.now()}`;
+  const operationPaths = {peristaltic_dispense:"dispense", peristaltic_prime:"prime", peristaltic_purge:"purge", shake:"shake", soak:"soak"};
+  const singleOperation = steps.length === 1;
+  const path = singleOperation ? `/v1/operations/${operationPaths[steps[0].operation]}` : "/v1/runs";
+  const payload = singleOperation
+    ? {request_id:requestId, operator_confirmed_idle:true, ...steps[0]}
+    : {request_id:requestId, operator_confirmed_idle:true, protocol:{name:`${cassetteLabel(state.cassette)} ${kind}`, steps}};
+  const result = await api(path, {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(payload)});
+  state.activeRunId = result.run_id; state.activeKind = kind; log(`Run ${result.run_id} accepted: ${steps.length} step(s)`); renderPlate(); renderProcedures(); renderProtocol(); renderQuick(); updateActions(); pollRun(result.run_id); return result;
+}
+async function pollRun(runId) {
+  clearTimeout(state.pollTimer);
+  try {
+    const run = await api(`/v1/runs/${runId}`), progress = `${run.completed_steps}/${run.total_steps} steps`;
+    if (state.activeKind === "protocol" && state.protocolRun) {
+      const entry = state.protocolRun.expanded[state.protocolRun.index], cycle = entry.cycles > 1 ? ` · cycle ${entry.cycle} of ${entry.cycles}` : "";
+      $("protocolProgress").innerHTML = `${pill(run.state)} step ${state.protocolRun.index + 1} of ${state.protocolRun.expanded.length}${cycle}`;
+    } else if (state.activeKind === "dispense" || state.activeKind === "quick") $(`${state.activeKind}Progress`).innerHTML = `${pill(run.state)} ${progress}`;
+    else if (PROCEDURES[state.activeKind]) $(`${state.activeKind}Progress`).innerHTML = `${pill(run.state)} ${progress}`;
+    if (!TERMINAL.includes(run.state)) { state.pollTimer = setTimeout(() => pollRun(runId), 450); return; }
+    const completedKind = state.activeKind; log(`Run ${run.state}: ${progress}${run.error ? ` · ${run.error}` : ""}`); state.activeRunId = null; state.activeKind = null;
+    if (completedKind === "dispense" || completedKind === "quick") $(`${completedKind}Progress`).innerHTML = pill(run.state);
+    if (PROCEDURES[completedKind]) {
+      $(`${completedKind}Progress`).innerHTML = pill(run.state);
+      if (run.state === "completed") {
+        const proc = PROCEDURES[completedKind], done = state.procedures[completedKind];
+        if (done.index === done.completed) done.completed += 1;
+        done.confirmed = false;
+        if (done.index < proc.steps.length - 1) done.index += 1;
+        if (procedureFinished(completedKind)) toast(`${proc.label} complete — ${proc.ready.title.toLowerCase()}.`);
+      }
+    }
+    if (run.state !== "completed" && run.state !== "aborted" && !state.protocolRun) toast(run.error || `Run ${run.state}`, true);
+    renderPlate(); renderProcedures(); renderProtocol(); renderQuick(); updateActions(); refreshUsage(true); refreshDevice(true);
+    const resolver = state.runResolver; state.runResolver = null; if (resolver) resolver(run);
+  } catch (error) { log(`Run poll failed: ${error.message}`); toast(`Status check failed: ${error.message}`, true); state.pollTimer = setTimeout(() => pollRun(runId), 1200); }
+}
+async function abortActive() { if (state.protocolRun) state.protocolRun.cancelled = true; cancelWait(); if (!state.activeRunId) return; try { await api(`/v1/runs/${state.activeRunId}/abort`, {method:"POST"}); log("Abort requested; it will apply between steps."); } catch (error) { toast(error.message, true); } }
+async function reconcileStartup() { if (!window.confirm("Confirm the instrument is physically stationary, the carrier area is clear, and no operation is running. A fresh Ready-state check will be performed before the lock is cleared.")) return; $("reconcile").disabled = true; try { const result = await api("/v1/reconcile", {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({operator_confirmed_stationary:true})}); log(`Startup lock reconciled; controller=${result.controller_state}`); toast("Reconciliation completed."); await refreshDevice(true); } catch (error) { toast(error.message, true); log(`Reconciliation failed: ${error.message}`); } finally { $("reconcile").disabled = false; } }
+qsa(".side button").forEach(button => button.onclick = () => { state.panel = button.dataset.panel; qsa(".side button").forEach(b => b.classList.toggle("active", b === button)); qsa(".panel").forEach(p => p.classList.toggle("active", p.id === `panel-${state.panel}`)); });
+qsa(".settings-menu button[data-settings-view]").forEach(button => button.onclick = () => {
+  const view = button.dataset.settingsView;
+  qsa(".settings-menu button[data-settings-view]").forEach(item => { item.classList.toggle("active", item === button); if (item === button) item.setAttribute("aria-current", "page"); else item.removeAttribute("aria-current"); });
+  qsa(".settings-view").forEach(section => section.classList.toggle("active", section.id === `settings-${view}`));
+  if (view === "activity") $("log").scrollTop = $("log").scrollHeight;
+});
+$("selectAllColumns").onclick = () => { state.dispense.columns = new Set(Array.from({length: selectionColumnCount(state.dispense)}, (_, i) => i + 1)); renderPlate(); updateActions(); };
+$("clearColumns").onclick = () => { state.dispense.columns = new Set(); renderPlate(); updateActions(); };
+$("volumeUp").onclick = () => bumpVolume(1); $("volumeDown").onclick = () => bumpVolume(-1);
+$("volume").oninput = () => { renderDispenseTotal(); updateActions(); };
+for (const id of ["preVolume", "preCycles"]) $(id).oninput = renderDispenseTotal;
+$("resetAdvanced").onclick = () => { $("flowRate").value = "medium"; $("preVolume").value = state.cassette === "5ul" ? 50 : 10; $("preCycles").value = 2; $("xOffset").value = 0; $("yOffset").value = 0; $("zOffset").value = 0; renderDispenseTotal(); };
+$("runDispense").onclick = runDispense;
+$("advanced").ontoggle = () => { if ($("advanced").open) scrollIntoView($("advanced"), "end"); };
+$("protocolName").oninput = () => { state.protocol.name = $("protocolName").value; state.protocol.dirty = true; updateActions(); };
+$("protocolPick").onchange = () => loadProtocol($("protocolPick").value);
+$("protocolNew").onclick = () => { if (state.protocol.dirty && !window.confirm("Discard the unsaved changes to this protocol?")) return; resetProtocolDraft(); renderProtocol(); updateActions(); };
+$("protocolSave").onclick = saveProtocol;
+$("protocolDelete").onclick = deleteProtocol;
+$("protocolRun").onclick = runProtocol;
+$("quickRun").onclick = runQuick;
+$("geometryRestore").onclick = restorePlateGeometry;
+$("geometrySave").onclick = savePlateGeometry;
+$("autoPrimeRestore").onclick = restoreAutoPrimeSettings;
+$("autoPrimeSave").onclick = saveAutoPrimeSettings;
+$("autoPrimeVolume").oninput = () => {
+  if (state.cassette) {
+    const value = Number($("autoPrimeVolume").value);
+    if (Number.isFinite(value)) state.autoPrimeDraft[state.cassette] = value;
+  }
+  state.autoPrimeDirty = true; $("autoPrimeStatus").textContent = "Unsaved changes"; updateActions();
+};
+document.addEventListener("click", event => {
+  const input = event.target.closest?.('input[type="number"], input[data-keypad="text"]');
+  if (!input || input.disabled || input.readOnly || state.keypad) return;
+  event.preventDefault(); input.blur(); openKeypad(input);
+});
+document.addEventListener("keydown", event => {
+  if (!state.keypad) return;
+  if (state.keypad.mode === "text" && /^[A-Za-z0-9 _-]$/.test(event.key)) {
+    const pad = state.keypad, next = (pad.fresh ? "" : pad.buffer) + event.key;
+    if (next.length <= pad.maxLength) pad.buffer = next;
+    pad.fresh = false; renderKeypad();
+  } else if (state.keypad.mode === "number" && /^[0-9]$/.test(event.key)) keypadPress(event.key);
+  else if (event.key === "Backspace") keypadPress("backspace");
+  else if (state.keypad.mode === "number" && event.key === "-") keypadPress("sign");
+  else if (event.key === "Enter") commitKeypad();
+  else if (event.key === "Escape") closeKeypad();
+  else return;
+  event.preventDefault();
+});
+$("keypadClose").onclick = closeKeypad; $("keypadCancel").onclick = closeKeypad;
+$("keypadClear").onclick = () => { state.keypad.buffer = ""; state.keypad.fresh = false; renderKeypad(); };
+$("keypadOk").onclick = commitKeypad;
+$("keypadModal").onclick = event => { if (event.target === $("keypadModal")) closeKeypad(); };
+$("protocolContinue").onclick = () => { const resolver = state.waitResolver; state.waitResolver = null; $("protocolContinue").hidden = true; if (resolver) resolver("done"); };
+qsa(".abort-button").forEach(button => button.onclick = abortActive); $("refresh").onclick = () => { refreshDevice(); refreshUsage(); refreshPlateGeometry(); refreshAutoPrime(false); }; $("powerOff").onclick = powerOffPi; $("reconcile").onclick = reconcileStartup; $("replaceCassette").onclick = resetUsage;
+state.dispense = newSelection(); resetProcedures(); resetProtocolDraft(); resetQuickDraft(); buildProcedurePanels(); applyDetectedCassette(null); renderPlateGeometry(); refreshDevice(); refreshUsage(); refreshLibrary(); refreshSettings(); refreshPlateGeometry(); refreshAutoPrime(); setInterval(() => refreshAutoPrime(true), 5000);
+</script>
+</body>
+</html>

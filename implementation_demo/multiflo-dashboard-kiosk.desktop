@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Name=MultiFlo Dashboard
+Comment=Open the local MultiFlo touchscreen dashboard in Chromium kiosk mode
+Exec=/home/multiflo-display/multiflo-app/demo/kiosk.sh
+Terminal=false
+X-GNOME-Autostart-enabled=true

@@ -1,0 +1,1 @@
+multiflo-display ALL=(root) NOPASSWD: /usr/sbin/shutdown now
